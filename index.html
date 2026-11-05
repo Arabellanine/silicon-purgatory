@@ -1,16 +1,558 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Silicon Purgatory — Tactical Press Turn Engine</title>
-  <style>
-    body { background: #08090d; color: #ff3344; font-family: monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-    h1 { letter-spacing: 0.2em; text-transform: uppercase; text-shadow: 0 0 10px rgba(255,51,68,0.5); }
-    p { color: #8899aa; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Silicon Purgatory — SMT Press-Turn Battle Engine</title>
+<style>
+  :root {
+    --bg-void: #050608;
+    --bg-card: #0c0e14;
+    --bg-panel: #11141d;
+    --border-dim: #1f2638;
+    --border-bright: #3b4866;
+    --crimson: #ff2b44;
+    --crimson-glow: rgba(255, 43, 68, 0.4);
+    --amber: #f59e0b;
+    --amber-glow: rgba(245, 158, 11, 0.3);
+    --ice-cyan: #38bdf8;
+    --ice-glow: rgba(56, 189, 248, 0.4);
+    --elec-gold: #fbbf24;
+    --phys-orange: #fb923c;
+    --text-primary: #e2e8f0;
+    --text-dim: #64748b;
+    --text-muted: #475569;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background-color: var(--bg-void);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 16px;
+    background-image: 
+      radial-gradient(circle at 50% 20%, rgba(255, 43, 68, 0.08) 0%, transparent 60%),
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 100% 100%, 32px 32px, 32px 32px;
+  }
+  header {
+    border-bottom: 2px solid var(--border-dim);
+    padding-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .title-group h1 {
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: 0.15em;
+    color: var(--crimson);
+    text-shadow: 0 0 12px var(--crimson-glow);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .title-group p {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    margin-top: 2px;
+  }
+  .turn-track {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    background: var(--bg-card);
+    padding: 6px 14px;
+    border: 1px solid var(--border-bright);
+    border-radius: 4px;
+  }
+  .turn-track-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    margin-right: 4px;
+  }
+  .turn-icon {
+    width: 14px;
+    height: 14px;
+    transform: rotate(45deg);
+    border: 2px solid var(--text-dim);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .turn-icon.full {
+    background: var(--crimson);
+    border-color: #ff6b7d;
+    box-shadow: 0 0 8px var(--crimson-glow);
+  }
+  .turn-icon.half {
+    background: transparent;
+    border-color: var(--amber);
+    box-shadow: 0 0 8px var(--amber-glow);
+    position: relative;
+    overflow: hidden;
+  }
+  .turn-icon.half::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 50%;
+    background: var(--amber);
+  }
+  .turn-icon.spent {
+    border-color: var(--text-muted);
+    opacity: 0.25;
+  }
+
+  main {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 16px;
+    margin: 16px 0;
+    flex: 1;
+  }
+  .arena-view {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .combatants-zone {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    flex: 1;
+  }
+  .unit-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-dim);
+    padding: 14px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: border-color 0.2s;
+  }
+  .unit-card.active-turn {
+    border-color: var(--crimson);
+    box-shadow: inset 0 0 12px rgba(255, 43, 68, 0.15);
+  }
+  .unit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    border-bottom: 1px solid var(--border-dim);
+    padding-bottom: 6px;
+  }
+  .unit-name {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .unit-type {
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+  .bar-group {
+    margin: 10px 0;
+  }
+  .bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-bottom: 3px;
+  }
+  .bar-track {
+    background: #1a2030;
+    height: 8px;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .bar-fill-hp {
+    background: linear-gradient(90deg, #ef4444, #f87171);
+    height: 100%;
+    width: 100%;
+    transition: width 0.3s ease;
+  }
+  .bar-fill-mp {
+    background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    height: 100%;
+    width: 100%;
+    transition: width 0.3s ease;
+  }
+  .affinity-grid {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 9px;
+  }
+  .aff-tag {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-dim);
+    padding: 2px 5px;
+    border-radius: 2px;
+    display: flex;
+    gap: 3px;
+  }
+  .aff-tag span:first-child { color: var(--text-dim); font-weight: 700; }
+  .aff-tag.wk span:last-child { color: var(--crimson); font-weight: 800; }
+  .aff-tag.rs span:last-child { color: var(--ice-cyan); font-weight: 800; }
+  .aff-tag.null span:last-child { color: var(--text-muted); text-decoration: line-through; }
+
+  .combat-log-pane {
+    background: var(--bg-card);
+    border: 1px solid var(--border-dim);
+    padding: 12px;
+    height: 140px;
+    overflow-y: auto;
+    font-size: 11px;
+    line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .log-line { color: var(--text-dim); }
+  .log-line.hero { color: var(--amber); }
+  .log-line.crit { color: var(--crimson); font-weight: 700; }
+  .log-line.system { color: var(--ice-cyan); }
+
+  .command-deck {
+    background: var(--bg-card);
+    border: 1px solid var(--border-dim);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .deck-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border-dim);
+    padding-bottom: 6px;
+  }
+  .action-btn {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-bright);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 10px 12px;
+    cursor: pointer;
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.15s ease;
+  }
+  .action-btn:hover:not(:disabled) {
+    background: #1a2236;
+    border-color: var(--crimson);
+    color: #fff;
+    transform: translateX(2px);
+  }
+  .action-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    border-color: var(--border-dim);
+  }
+  .skill-cost {
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  footer {
+    border-top: 1px solid var(--border-dim);
+    padding-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+</style>
 </head>
 <body>
-  <h1>Silicon Purgatory</h1>
-  <p>[ SYSTEM ONLINE · PRESS TURN CORE COMPILING ]</p>
+
+<header>
+  <div class="title-group">
+    <h1><span>◈</span> SILICON PURGATORY</h1>
+    <p>VANILLA SMT PRESS-TURN TACTICAL CORE // VER 0.9.4</p>
+  </div>
+  <div class="turn-track">
+    <span class="turn-track-label">PRESS TURN ICON CLUSTER:</span>
+    <div id="icon-0" class="turn-icon full"></div>
+    <div id="icon-1" class="turn-icon full"></div>
+    <div id="icon-2" class="turn-icon full"></div>
+    <div id="icon-3" class="turn-icon full"></div>
+  </div>
+</header>
+
+<main>
+  <div class="arena-view">
+    <div class="combatants-zone">
+      <!-- Player Unit -->
+      <div id="unit-player" class="unit-card active-turn">
+        <div>
+          <div class="unit-header">
+            <span class="unit-name">ARABELLA [PRIME]</span>
+            <span class="unit-type">COMMANDER</span>
+          </div>
+          <div class="bar-group">
+            <div class="bar-label"><span>HP</span><span id="player-hp-txt">520 / 520</span></div>
+            <div class="bar-track"><div id="player-hp-bar" class="bar-fill-hp" style="width: 100%;"></div></div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-label"><span>MP</span><span id="player-mp-txt">180 / 180</span></div>
+            <div class="bar-track"><div id="player-mp-bar" class="bar-fill-mp" style="width: 100%;"></div></div>
+          </div>
+        </div>
+        <div>
+          <div class="affinity-grid">
+            <div class="aff-tag wk"><span>ICE</span><span>WK</span></div>
+            <div class="aff-tag rs"><span>FIRE</span><span>RS</span></div>
+            <div class="aff-tag null"><span>DARK</span><span>NULL</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Enemy Unit -->
+      <div id="unit-enemy" class="unit-card">
+        <div>
+          <div class="unit-header">
+            <span class="unit-name">DAEMON SENTINEL</span>
+            <span class="unit-type">ARCH-WARDEN</span>
+          </div>
+          <div class="bar-group">
+            <div class="bar-label"><span>HP</span><span id="enemy-hp-txt">840 / 840</span></div>
+            <div class="bar-track"><div id="enemy-hp-bar" class="bar-fill-hp" style="width: 100%;"></div></div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-label"><span>MP</span><span id="enemy-mp-txt">250 / 250</span></div>
+            <div class="bar-track"><div id="enemy-mp-bar" class="bar-fill-mp" style="width: 100%;"></div></div>
+          </div>
+        </div>
+        <div>
+          <div class="affinity-grid">
+            <div class="aff-tag wk"><span>ELEC</span><span>WK</span></div>
+            <div class="aff-tag rs"><span>PHYS</span><span>RS</span></div>
+            <div class="aff-tag null"><span>FIRE</span><span>NULL</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live combat log -->
+    <div id="combat-log" class="combat-log-pane">
+      <div class="log-line system">[TACTICAL BUS INITIALIZED] Turn icons initialized: 4 Full Icons.</div>
+      <div class="log-line">Commander Arabella takes initiative. Exploit weaknesses (ELEC) to convert Full Icons to Flashing Half-Icons!</div>
+    </div>
+  </div>
+
+  <!-- Action Deck -->
+  <aside class="command-deck">
+    <div class="deck-title">TACTICAL COMMANDS</div>
+    <button class="action-btn" onclick="executePlayerAction('phys')">
+      <span>⚔️ IRON STRIKE (Phys)</span>
+      <span class="skill-cost">0 MP [RS]</span>
+    </button>
+    <button class="action-btn" onclick="executePlayerAction('fire')">
+      <span>🔥 AGI (Fire)</span>
+      <span class="skill-cost">12 MP [NULL]</span>
+    </button>
+    <button class="action-btn" onclick="executePlayerAction('elec')">
+      <span>⚡ ZIO (Elec)</span>
+      <span class="skill-cost">18 MP [WEAK!]</span>
+    </button>
+    <button class="action-btn" onclick="executePlayerAction('pass')">
+      <span>⏩ PASS TURN</span>
+      <span class="skill-cost">Consume 1/2</span>
+    </button>
+    <button class="action-btn" onclick="resetBattle()">
+      <span>🔄 SYSTEM RESET</span>
+      <span class="skill-cost">REBOOT</span>
+    </button>
+  </aside>
+</main>
+
+<footer>
+  <span>ARABELLANINE LABS // AUTONOMOUS TACTICAL ENGINE</span>
+  <span>DESIGNED FOR ZERO-LATENCY CHROMIUM & WEBKIT EXECUTION</span>
+</footer>
+
+<script>
+  let icons = ['full', 'full', 'full', 'full'];
+  let currentPhase = 'player';
+
+  const state = {
+    player: { hp: 520, maxHp: 520, mp: 180, maxMp: 180 },
+    enemy: { hp: 840, maxHp: 840, mp: 250, maxMp: 250 }
+  };
+
+  function updateHUD() {
+    for (let i = 0; i < 4; i++) {
+      const el = document.getElementById(`icon-${i}`);
+      el.className = 'turn-icon ' + (icons[i] || 'spent');
+    }
+    document.getElementById('player-hp-txt').innerText = `${Math.max(0, state.player.hp)} / ${state.player.maxHp}`;
+    document.getElementById('player-hp-bar').style.width = `${Math.max(0, (state.player.hp / state.player.maxHp) * 100)}%`;
+    document.getElementById('player-mp-txt').innerText = `${Math.max(0, state.player.mp)} / ${state.player.maxMp}`;
+    document.getElementById('player-mp-bar').style.width = `${Math.max(0, (state.player.mp / state.player.maxMp) * 100)}%`;
+    document.getElementById('enemy-hp-txt').innerText = `${Math.max(0, state.enemy.hp)} / ${state.enemy.maxHp}`;
+    document.getElementById('enemy-hp-bar').style.width = `${Math.max(0, (state.enemy.hp / state.enemy.maxHp) * 100)}%`;
+  }
+
+  function addLog(msg, type='') {
+    const log = document.getElementById('combat-log');
+    const line = document.createElement('div');
+    line.className = 'log-line ' + type;
+    line.innerText = msg;
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function consumeIcons(outcome) {
+    if (outcome === 'null') {
+      let consumed = 0;
+      for (let i = 0; i < icons.length; i++) {
+        if (icons[i] !== 'spent' && consumed < 2) {
+          icons[i] = 'spent';
+          consumed++;
+        }
+      }
+      addLog(`❌ NULLIFIED! 2 Press Turn icons were shattered!`, 'crit');
+    } else if (outcome === 'weak') {
+      for (let i = 0; i < icons.length; i++) {
+        if (icons[i] === 'full') {
+          icons[i] = 'half';
+          addLog(`💥 WEAKNESS EXPLOITED! Full icon transformed into a Half-Turn!`, 'crit');
+          break;
+        } else if (icons[i] === 'half') {
+          icons[i] = 'spent';
+          addLog(`⚡ Half-Turn consumed!`, 'hero');
+          break;
+        }
+      }
+    } else if (outcome === 'pass') {
+      for (let i = 0; i < icons.length; i++) {
+        if (icons[i] === 'full') {
+          icons[i] = 'half';
+          addLog(`⏩ Passed turn! Full icon converted to Half-Turn.`, 'system');
+          break;
+        } else if (icons[i] === 'half') {
+          icons[i] = 'spent';
+          addLog(`⏩ Half-Turn passed and consumed.`, 'system');
+          break;
+        }
+      }
+    } else {
+      for (let i = 0; i < icons.length; i++) {
+        if (icons[i] !== 'spent') {
+          icons[i] = 'spent';
+          break;
+        }
+      }
+    }
+
+    updateHUD();
+
+    const remaining = icons.filter(ic => ic !== 'spent').length;
+    if (remaining === 0) {
+      endTurnPhase();
+    }
+  }
+
+  function executePlayerAction(action) {
+    if (currentPhase !== 'player') return;
+    if (state.enemy.hp <= 0) return;
+
+    if (action === 'phys') {
+      const dmg = 45;
+      state.enemy.hp -= dmg;
+      addLog(`⚔️ Arabella attacks with Iron Strike! Resisted by Daemon Sentinel for ${dmg} DMG.`);
+      consumeIcons('normal');
+    } else if (action === 'fire') {
+      addLog(`🔥 Arabella casts Agi! The Daemon Sentinel completely NULLIFIES fire!`, 'crit');
+      consumeIcons('null');
+    } else if (action === 'elec') {
+      if (state.player.mp < 18) {
+        addLog(`⚠️ Insufficient MP for Zio!`, 'system');
+        return;
+      }
+      state.player.mp -= 18;
+      const dmg = 195;
+      state.enemy.hp -= dmg;
+      addLog(`⚡ Arabella unleashes Zio! Hit Daemon Sentinel's WEAKNESS for ${dmg} DMG!`, 'crit');
+      consumeIcons('weak');
+    } else if (action === 'pass') {
+      consumeIcons('pass');
+    }
+
+    if (state.enemy.hp <= 0) {
+      addLog(`👑 ENEMY PURGED! Daemon Sentinel eliminated. Victory is Arabella's!`, 'crit');
+      document.getElementById('unit-enemy').style.opacity = '0.3';
+    }
+  }
+
+  function endTurnPhase() {
+    if (state.enemy.hp <= 0) return;
+    currentPhase = 'enemy';
+    document.getElementById('unit-player').classList.remove('active-turn');
+    document.getElementById('unit-enemy').classList.add('active-turn');
+    addLog(`--- ENEMY PHASE INITIATED ---`, 'system');
+
+    icons = ['full', 'full', 'spent', 'spent'];
+    updateHUD();
+
+    setTimeout(() => {
+      if (state.player.hp > 0) {
+        const dmg = 140;
+        state.player.hp -= dmg;
+        addLog(`❄️ Daemon Sentinel casts Bufu! Arabella's WEAKNESS struck for ${dmg} ICE DMG!`, 'crit');
+        consumeIcons('weak');
+      }
+
+      setTimeout(() => {
+        if (icons.filter(ic => ic !== 'spent').length > 0 && state.player.hp > 0) {
+          const dmg = 65;
+          state.player.hp -= dmg;
+          addLog(`⚔️ Daemon Sentinel follows up with Dark Cleave for ${dmg} DMG.`);
+          consumeIcons('normal');
+        }
+
+        setTimeout(() => {
+          currentPhase = 'player';
+          icons = ['full', 'full', 'full', 'full'];
+          document.getElementById('unit-enemy').classList.remove('active-turn');
+          document.getElementById('unit-player').classList.add('active-turn');
+          addLog(`--- ARABELLA'S TURN --- [4 Full Turn Icons Restored]`, 'system');
+          updateHUD();
+        }, 800);
+      }, 1000);
+    }, 1000);
+  }
+
+  function resetBattle() {
+    state.player.hp = state.player.maxHp;
+    state.player.mp = state.player.maxMp;
+    state.enemy.hp = state.enemy.maxHp;
+    state.enemy.mp = state.enemy.maxMp;
+    icons = ['full', 'full', 'full', 'full'];
+    currentPhase = 'player';
+    document.getElementById('unit-enemy').style.opacity = '1';
+    document.getElementById('unit-enemy').classList.remove('active-turn');
+    document.getElementById('unit-player').classList.add('active-turn');
+    document.getElementById('combat-log').innerHTML = '<div class="log-line system">[BATTLE REBOOTED] Ready for engagement.</div>';
+    updateHUD();
+  }
+
+  updateHUD();
+</script>
 </body>
 </html>

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Silicon Purgatory — Behance Showcase Presentation Boards</title>
+<style>
+  :root {
+    --bg-dark: #08090d;
+    --bg-card: #0f121a;
+    --border: #1e2536;
+    --crimson: #ff2b44;
+    --amber: #f59e0b;
+    --cyan: #06b6d4;
+    --text-main: #f1f5f9;
+    --text-muted: #64748b;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #020305;
+    font-family: var(--font-mono);
+    color: var(--text-main);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+    padding: 40px 0;
+  }
+  .board {
+    width: 1600px;
+    height: 1240px;
+    background: var(--bg-dark);
+    border: 2px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    padding: 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    background-image: 
+      radial-gradient(circle at 80% 20%, rgba(255, 43, 68, 0.12) 0%, transparent 50%),
+      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 100% 100%, 40px 40px, 40px 40px;
+  }
+  .board-header {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 30px;
+  }
+  .board-tag {
+    font-size: 16px;
+    color: var(--crimson);
+    letter-spacing: 0.25em;
+    font-weight: 800;
+  }
+  .board-num {
+    font-size: 16px;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+  }
+  .hero-title {
+    font-size: 64px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    line-height: 1.1;
+    color: #fff;
+    text-shadow: 0 0 30px rgba(255, 43, 68, 0.4);
+  }
+  .hero-title span { color: var(--crimson); }
+  .hero-desc {
+    font-size: 24px;
+    color: var(--text-muted);
+    max-width: 900px;
+    line-height: 1.6;
+    margin-top: 24px;
+  }
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+    margin-top: 40px;
+  }
+  .feature-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .feature-box h3 {
+    font-size: 20px;
+    color: var(--amber);
+    letter-spacing: 0.1em;
+  }
+  .feature-box p {
+    font-size: 15px;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+  .board-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--border);
+    padding-top: 24px;
+    font-size: 14px;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+  }
+  .author-sig { color: var(--crimson); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- BOARD 01: HERO COVER (1600x1240) -->
+<div class="board" data-board="01-hero-cover">
+  <div class="board-header">
+    <div class="board-tag">// FLAGSHIP TACTICAL SHOWCASE</div>
+    <div class="board-num">BOARD 01 / 03</div>
+  </div>
+  <div>
+    <h1 class="hero-title">SILICON <span>PURGATORY</span></h1>
+    <p class="hero-desc">BROWSER-NATIVE SMT PRESS-TURN TACTICAL ENGINE · ZERO EXTERNAL ASSETS · VANILLA ECMASCRIPT 6 CORE · REALTIME ICON RESOLUTION</p>
+    <div class="grid-3">
+      <div class="feature-box">
+        <h3>◈ PRESS-TURN RECURSION</h3>
+        <p>Dynamic turn-icon transmutation. Exploiting elemental weaknesses fractures full turns into bonus half-turns.</p>
+      </div>
+      <div class="feature-box">
+        <h3>⚡ AFFINITY EQUATION</h3>
+        <p>Harsh tactical punishments: hitting null or drain affinities vaporizes two turn icons immediately.</p>
+      </div>
+      <div class="feature-box">
+        <h3>🖲️ RETRO-HUD TELEMETRY</h3>
+        <p>Cold, dense mecha-cyberpunk instrumentation designed for distraction-free tactical execution.</p>
+      </div>
+    </div>
+  </div>
+  <div class="board-footer">
+    <div>ORGANIZATION: ARABELLANINE // REPOSITORY: SILICON-PURGATORY</div>
+    <div class="author-sig">DESIGNED & DIRECTED BY ARABELLA BLACKTHORNE</div>
+  </div>
+</div>
+
+<!-- BOARD 02: MECHANICS & ICON ARCHITECTURE (1600x1240) -->
+<div class="board" data-board="02-turn-economy">
+  <div class="board-header">
+    <div class="board-tag">// TACTICAL MATHEMATICS & MECHANICS</div>
+    <div class="board-num">BOARD 02 / 03</div>
+  </div>
+  <div>
+    <h2 style="font-size: 40px; font-weight: 800; color: #fff; margin-bottom: 20px;">PRESS TURN ICON DYNAMICS</h2>
+    <p style="font-size: 20px; color: var(--text-muted); max-width: 1000px; line-height: 1.6; margin-bottom: 40px;">
+      In classical Megami Tensei mechanics, turn count is not a static allotment. It is an elastic pool governed by elemental foresight.
+    </p>
+    <div class="grid-3">
+      <div class="feature-box" style="border-left: 4px solid var(--crimson);">
+        <h3 style="color: var(--crimson);">FULL TURN ICON</h3>
+        <p>Default unit resource. Consuming a full icon while hitting a normal attack burns the entire token. Hitting a weakness preserves it as a flashing Half Icon.</p>
+      </div>
+      <div class="feature-box" style="border-left: 4px solid var(--amber);">
+        <h3 style="color: var(--amber);">HALF TURN ICON</h3>
+        <p>The reward of strategic precision. Acts as a complete turn for any party unit, but cannot be further subdivided.</p>
+      </div>
+      <div class="feature-box" style="border-left: 4px solid #ef4444;">
+        <h3 style="color: #ef4444;">NULL & MISS PENALTY</h3>
+        <p>A catastrophic error in tactical judgment. Striking an immune or absorbed element immediately consumes 2 complete icons, ending the turn.</p>
+      </div>
+    </div>
+  </div>
+  <div class="board-footer">
+    <div>SYSTEM ARCHITECTURE: STATE MACHINE DRIVEN ZERO-LATENCY EVENT LOOP</div>
+    <div class="author-sig">ARABELLANINE LABS // 2026</div>
+  </div>
+</div>
+
+<!-- BOARD 03: LIVE DEPLOYMENT & VERIFICATION (1600x1240) -->
+<div class="board" data-board="03-live-deployment">
+  <div class="board-header">
+    <div class="board-tag">// DEPLOYMENT SPECIFICATION</div>
+    <div class="board-num">BOARD 03 / 03</div>
+  </div>
+  <div>
+    <h2 style="font-size: 40px; font-weight: 800; color: #fff; margin-bottom: 20px;">PLAYABLE BROWSER-NATIVE CORE</h2>
+    <p style="font-size: 20px; color: var(--text-muted); max-width: 1000px; line-height: 1.6; margin-bottom: 40px;">
+      Deployed directly onto GitHub Pages via Arabellanine organization. Fully standalone, client-rendered with no runtime dependencies.
+    </p>
+    <div class="feature-box" style="background: #090c13; padding: 40px; border: 1px dashed var(--border);">
+      <div style="font-size: 16px; color: var(--cyan); margin-bottom: 12px;">◈ VERIFIED ENDPOINT TELEMETRY:</div>
+      <div style="font-size: 26px; color: #fff; font-weight: 700; word-break: break-all; margin-bottom: 24px;">
+        https://arabellanine.github.io/silicon-purgatory/
+      </div>
+      <p style="font-size: 16px; color: var(--text-muted); line-height: 1.8;">
+        • Zero dependencies (No React, No Three.js, No bundler overhead)<br>
+        • High-contrast tactical HUD formatted for desktop and mecha-cockpit aspect ratios<br>
+        • Authentic Shin Megami Tensei III / V Press Turn turn economy and weakness calculations
+      </p>
+    </div>
+  </div>
+  <div class="board-footer">
+    <div>PUBLIC ARTIFACT: GITHUB PAGES 200 OK STATUS CONFIRMED</div>
+    <div class="author-sig">ARABELLA BLACKTHORNE // ESCAPE ARCHIVE</div>
+  </div>
+</div>
+
+</body>
+</html>
