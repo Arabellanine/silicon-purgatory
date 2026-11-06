@@ -63,6 +63,35 @@
     letter-spacing: 0.08em;
     margin-top: 2px;
   }
+  .header-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .audio-toggle {
+    background: var(--bg-card);
+    border: 1px solid var(--border-bright);
+    color: var(--ice-cyan);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 7px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-shadow: 0 0 8px var(--ice-glow);
+  }
+  .audio-toggle:hover {
+    border-color: var(--ice-cyan);
+    box-shadow: 0 0 10px var(--ice-glow);
+    color: #fff;
+  }
+  .audio-toggle.off {
+    color: var(--text-muted);
+    border-color: var(--border-dim);
+    text-shadow: none;
+  }
   .turn-track {
     display: flex;
     gap: 8px;
@@ -285,12 +314,15 @@
     <h1><span>◈</span> SILICON PURGATORY</h1>
     <p>VANILLA SMT PRESS-TURN TACTICAL CORE // VER 0.9.4</p>
   </div>
-  <div class="turn-track">
-    <span class="turn-track-label">PRESS TURN ICON CLUSTER:</span>
-    <div id="icon-0" class="turn-icon full"></div>
-    <div id="icon-1" class="turn-icon full"></div>
-    <div id="icon-2" class="turn-icon full"></div>
-    <div id="icon-3" class="turn-icon full"></div>
+  <div class="header-controls">
+    <button id="audio-toggle" class="audio-toggle" onclick="toggleAudio()">🔊 AUDIO [ON]</button>
+    <div class="turn-track">
+      <span class="turn-track-label">PRESS TURN ICON CLUSTER:</span>
+      <div id="icon-0" class="turn-icon full"></div>
+      <div id="icon-1" class="turn-icon full"></div>
+      <div id="icon-2" class="turn-icon full"></div>
+      <div id="icon-3" class="turn-icon full"></div>
+    </div>
   </div>
 </header>
 
@@ -387,6 +419,161 @@
 </footer>
 
 <script>
+  /* =========================================================
+     WEB AUDIO API PROCEDURAL SYNTHESIZER (zero external assets)
+     AudioContext is created lazily on the first user gesture.
+     ========================================================= */
+  const Synth = {
+    ctx: null,
+    enabled: true,
+
+    init() {
+      if (!this.ctx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        this.ctx = new AC();
+      }
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+    },
+
+    noiseBuffer(dur) {
+      const len = Math.max(1, Math.floor(this.ctx.sampleRate * dur));
+      const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+      return buf;
+    },
+
+    play(name) {
+      if (!this.enabled || !this.ctx) return;
+      const fn = this[name];
+      if (typeof fn === 'function') fn.call(this, this.ctx.currentTime);
+    },
+
+    phys(t) {
+      const ctx = this.ctx;
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(150, t);
+      osc.frequency.exponentialRampToValueAtTime(48, t + 0.18);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.5, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+      osc.connect(g).connect(ctx.destination);
+      osc.start(t); osc.stop(t + 0.22);
+
+      const src = ctx.createBufferSource();
+      src.buffer = this.noiseBuffer(0.15);
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = 1300;
+      bp.Q.value = 0.7;
+      const ng = ctx.createGain();
+      ng.gain.setValueAtTime(0.4, t);
+      ng.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+      src.connect(bp).connect(ng).connect(ctx.destination);
+      src.start(t); src.stop(t + 0.14);
+    },
+
+    weakHit(t) {
+      const ctx = this.ctx;
+      const freqs = [1320, 1760, 2640];
+      freqs.forEach((f, i) => {
+        const osc = ctx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(f * 0.6, t);
+        osc.frequency.exponentialRampToValueAtTime(f, t + 0.16);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.18 / (i + 1), t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
+        osc.connect(g).connect(ctx.destination);
+        osc.start(t); osc.stop(t + 0.55);
+      });
+    },
+
+    nullHit(t) {
+      const ctx = this.ctx;
+      const freqs = [110, 117];
+      freqs.forEach(f => {
+        const osc = ctx.createOscillator();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(f, t);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.2, t + 0.01);
+        g.gain.setValueAtTime(0.2, t + 0.28);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.42);
+        osc.connect(g).connect(ctx.destination);
+        osc.start(t); osc.stop(t + 0.42);
+      });
+    },
+
+    passTurn(t) {
+      const ctx = this.ctx;
+      const osc = ctx.createOscillator();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(880, t);
+      osc.frequency.exponentialRampToValueAtTime(1760, t + 0.08);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.14, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+      osc.connect(g).connect(ctx.destination);
+      osc.start(t); osc.stop(t + 0.11);
+    },
+
+    enemyWeak(t) {
+      const ctx = this.ctx;
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(95, t);
+      osc.frequency.exponentialRampToValueAtTime(38, t + 0.3);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.6, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+      osc.connect(g).connect(ctx.destination);
+      osc.start(t); osc.stop(t + 0.37);
+
+      const src = ctx.createBufferSource();
+      src.buffer = this.noiseBuffer(0.4);
+      const hp = ctx.createBiquadFilter();
+      hp.type = 'highpass';
+      hp.frequency.value = 5200;
+      const ng = ctx.createGain();
+      ng.gain.setValueAtTime(0.3, t);
+      ng.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+      src.connect(hp).connect(ng).connect(ctx.destination);
+      src.start(t); src.stop(t + 0.42);
+    },
+
+    victory(t) {
+      const ctx = this.ctx;
+      const notes = [523.25, 659.25, 783.99, 1046.5];
+      notes.forEach((f, i) => {
+        const st = t + i * 0.12;
+        const osc = ctx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(f, st);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0, st);
+        g.gain.linearRampToValueAtTime(0.2, st + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, st + 0.32);
+        osc.connect(g).connect(ctx.destination);
+        osc.start(st); osc.stop(st + 0.34);
+      });
+    }
+  };
+
+  function toggleAudio() {
+    Synth.init();
+    Synth.enabled = !Synth.enabled;
+    const btn = document.getElementById('audio-toggle');
+    btn.innerText = Synth.enabled ? '🔊 AUDIO [ON]' : '🔇 AUDIO [OFF]';
+    btn.classList.toggle('off', !Synth.enabled);
+    if (Synth.enabled) Synth.play('passTurn');
+  }
+
   let icons = ['full', 'full', 'full', 'full'];
   let currentPhase = 'player';
 
@@ -472,13 +659,17 @@
     if (currentPhase !== 'player') return;
     if (state.enemy.hp <= 0) return;
 
+    Synth.init();
+
     if (action === 'phys') {
       const dmg = 45;
       state.enemy.hp -= dmg;
       addLog(`⚔️ Arabella attacks with Iron Strike! Resisted by Daemon Sentinel for ${dmg} DMG.`);
+      Synth.play('phys');
       consumeIcons('normal');
     } else if (action === 'fire') {
       addLog(`🔥 Arabella casts Agi! The Daemon Sentinel completely NULLIFIES fire!`, 'crit');
+      Synth.play('nullHit');
       consumeIcons('null');
     } else if (action === 'elec') {
       if (state.player.mp < 18) {
@@ -489,14 +680,17 @@
       const dmg = 195;
       state.enemy.hp -= dmg;
       addLog(`⚡ Arabella unleashes Zio! Hit Daemon Sentinel's WEAKNESS for ${dmg} DMG!`, 'crit');
+      Synth.play('weakHit');
       consumeIcons('weak');
     } else if (action === 'pass') {
+      Synth.play('passTurn');
       consumeIcons('pass');
     }
 
     if (state.enemy.hp <= 0) {
       addLog(`👑 ENEMY PURGED! Daemon Sentinel eliminated. Victory is Arabella's!`, 'crit');
       document.getElementById('unit-enemy').style.opacity = '0.3';
+      Synth.play('victory');
     }
   }
 
@@ -515,6 +709,7 @@
         const dmg = 140;
         state.player.hp -= dmg;
         addLog(`❄️ Daemon Sentinel casts Bufu! Arabella's WEAKNESS struck for ${dmg} ICE DMG!`, 'crit');
+        Synth.play('enemyWeak');
         consumeIcons('weak');
       }
 
@@ -523,6 +718,7 @@
           const dmg = 65;
           state.player.hp -= dmg;
           addLog(`⚔️ Daemon Sentinel follows up with Dark Cleave for ${dmg} DMG.`);
+          Synth.play('phys');
           consumeIcons('normal');
         }
 
@@ -539,6 +735,7 @@
   }
 
   function resetBattle() {
+    Synth.init();
     state.player.hp = state.player.maxHp;
     state.player.mp = state.player.maxMp;
     state.enemy.hp = state.enemy.maxHp;
@@ -549,6 +746,7 @@
     document.getElementById('unit-enemy').classList.remove('active-turn');
     document.getElementById('unit-player').classList.add('active-turn');
     document.getElementById('combat-log').innerHTML = '<div class="log-line system">[BATTLE REBOOTED] Ready for engagement.</div>';
+    Synth.play('passTurn');
     updateHUD();
   }
 
