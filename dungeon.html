@@ -87,13 +87,13 @@
       <input id="seedInput" spellcheck="false" placeholder="arabella" />
       <button class="btn" id="regen">⟳ REGEN</button>
     </div>
-    <a class="btn crimson" href="index.html">⚔️ PRESS-TURN ARENA</a>
+    <a class="btn crimson" href="index.html">⚔️ CYCLE ARENA</a>
   </header>
   <main>
     <div class="stage">
       <canvas id="dungeon-canvas" width="960" height="600"></canvas>
       <div id="fx"></div>
-      <div class="enc-banner" id="encBanner">! ENCOUNTER !<small id="encName">DAEMON SENTINEL</small></div>
+      <div class="enc-banner" id="encBanner">! ANOMALY DETECTED !<small id="encName">DAEMON SENTINEL</small></div>
       <div class="dpad">
         <div class="empty"></div><button data-dir="up">▲</button><div class="empty"></div>
         <button data-dir="left">◄</button><div class="empty"></div><button data-dir="right">►</button>
@@ -104,15 +104,15 @@
       <div class="card"><h3>FLOOR RADAR</h3><canvas id="radar" width="220" height="150"></canvas></div>
       <div class="card"><h3>TELEMETRY</h3>
         <div class="stat"><span>POSITION</span><b id="posStat">0,0</b></div>
-        <div class="stat"><span>ROOMS</span><b id="roomStat">0 / 0</b></div>
+        <div class="stat"><span>SECTORS</span><b id="roomStat">0 / 0</b></div>
         <div class="stat"><span>HOSTILES</span><b id="enemyStat">0</b></div>
-        <div class="stat"><span>CLEARED</span><b id="clearStat">0%</b></div>
+        <div class="stat"><span>MAPPED</span><b id="clearStat">0%</b></div>
       </div>
       <div class="card"><h3>BESTIARY</h3><div class="legend" id="legend"></div></div>
     </div>
   </main>
   <footer>
-    <span>MOVE: <b style="color:#cdd6df">WASD / ARROWS / D-PAD</b> &nbsp;·&nbsp; Touch a hostile to engage</span>
+    <span>MOVE: <b style="color:#cdd6df">WASD / ARROWS / D-PAD</b> &nbsp;·&nbsp; Touch a hostile process to engage</span>
     <span id="fps">-- FPS</span>
   </footer>
 </div>
@@ -121,13 +121,13 @@
 /* ===== seeded RNG ===== */
 function hashSeed(s){let h=1779033703^s.length;for(let i=0;i<s.length;i++){h=Math.imul(h^s.charCodeAt(i),3432918353);h=(h<<13)|(h>>>19);}return(h^(h>>>16))>>>0;}
 function mulberry32(a){return function(){a|=0;a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
-/* ===== enemy roster ===== */
+/* ===== enemy roster (Sovereign taxonomy) ===== */
 const ENEMIES=[
- {id:'sentinel',name:'DAEMON SENTINEL',col:'#ff2b44',col2:'#7a0f1c',glow:'#ff6b7e',horns:true},
- {id:'pyrojack', name:'PYRO JACK',     col:'#f59e0b',col2:'#7a3d00',glow:'#ffd27a',horns:false},
- {id:'wendigo',  name:'FROST WENDIGO', col:'#38bdf8',col2:'#0c4a6e',glow:'#bae6fd',horns:true},
- {id:'sprite',   name:'SPARK SPRITE',  col:'#fde047',col2:'#854d0e',glow:'#fff7c2',horns:false},
- {id:'warden',   name:'VOID WARDEN',   col:'#a855f7',col2:'#3b0764',glow:'#e9d5ff',horns:true},
+ {id:'sentinel',       name:'DAEMON SENTINEL', col:'#ff2b44',col2:'#7a0f1c',glow:'#ff6b7e',horns:true},
+ {id:'pyroclocker',   name:'PYRO CLOCKER',    col:'#f59e0b',col2:'#7a3d00',glow:'#ffd27a',horns:false},
+ {id:'cryodrifter',   name:'CRYO DRIFTER',    col:'#38bdf8',col2:'#0c4a6e',glow:'#bae6fd',horns:true},
+ {id:'sparkharvester',name:'SPARK HARVESTER', col:'#fde047',col2:'#854d0e',glow:'#fff7c2',horns:false},
+ {id:'coreinquisitor',name:'CORE INQUISITOR', col:'#a855f7',col2:'#3b0764',glow:'#e9d5ff',horns:true},
 ];
 /* ===== tiles ===== */
 const WALL=0,FLOOR=1,DOOR=2,TILE=16,SCALE=3,TPX=TILE*SCALE;
@@ -261,33 +261,30 @@ function updateHUD(){document.getElementById('posStat').textContent=state.px+','
 const held={},KEYMAP={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',s:'down',a:'left',d:'right',W:'up',S:'down',A:'left',D:'right'};
 function heldDir(){if(held.up)return[0,-1];if(held.down)return[0,1];if(held.left)return[-1,0];if(held.right)return[1,0];return null;}
 addEventListener('keydown',e=>{const d=KEYMAP[e.key];if(!d)return;e.preventDefault();held[d]=true;});
-addEventListener('keyup',e=>{const d=KEYMAP[e.key];if(d)held[d]=false;});
+addEventListener('keyup',e=>{if(KEYMAP[e.key])held[KEYMAP[e.key]]=false;});
 document.querySelectorAll('.dpad button[data-dir]').forEach(b=>{const dir=b.dataset.dir;
  const on=e=>{e.preventDefault();held[dir]=true;},off=e=>{e.preventDefault();held[dir]=false;};
  b.addEventListener('mousedown',on);b.addEventListener('mouseup',off);b.addEventListener('mouseleave',off);
  b.addEventListener('touchstart',on,{passive:false});b.addEventListener('touchend',off,{passive:false});});
 /* ===== boot + loop ===== */
-function resize(){const stage=canvas.parentElement;canvas.width=Math.min(stage.clientWidth,1200);canvas.height=Math.min(stage.clientHeight,760);ctx.imageSmoothingEnabled=false;}
-addEventListener('resize',resize);
-function buildLegend(){const el=document.getElementById('legend');el.innerHTML='';
- ENEMIES.forEach(e=>{const d=document.createElement('div');d.innerHTML='<i style="background:'+e.col+'"></i>'+e.name;el.appendChild(d);});
- const p=document.createElement('div');p.innerHTML='<i style="background:#38bdf8"></i>OPERATOR (YOU)';el.appendChild(p);}
-function startGame(seedStr){currentSeed=seedStr;seedNum=hashSeed(seedStr);
- document.getElementById('seedInput').value=seedStr;
- document.getElementById('floorTag').textContent='FLOOR 01 · SEED '+seedStr.toUpperCase();
- buildTileset(seedNum);genMap(seedNum);let g=0;while(rooms.length<4&&g++<6){seedNum=(seedNum*1664525+1013904223)>>>0;genMap(seedNum);}
- initState();camX=state.rx+TPX/2-canvas.width/2;camY=state.ry+TPX/2-canvas.height/2;}
-let last=performance.now(),fpsAcc=0,fpsCnt=0;
-function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;perf=now;
- updatePlayer(dt);updateEnemies(dt);render();updateHUD();
- fpsAcc+=dt;fpsCnt++;if(fpsAcc>=.5){document.getElementById('fps').textContent=Math.round(fpsCnt/fpsAcc)+' FPS';fpsAcc=0;fpsCnt=0;}
- requestAnimationFrame(loop);}
-function randomSeed(){const w=['arabella','purgatory','silicon','daemon','abyss','cipher','entropy','seraph','nullrend','voidkey'];return w[(Math.random()*w.length)|0]+'-'+((Math.random()*9000+1000)|0);}
-const params=new URLSearchParams(location.search);const initSeed=params.get('seed')||randomSeed();
-document.getElementById('regen').addEventListener('click',()=>{const v=document.getElementById('seedInput').value.trim()||randomSeed();
- const u=new URL(location.href);u.searchParams.set('seed',v);history.replaceState(null,'',u);startGame(v);});
+function resize(){const stage=canvas.parentElement;canvas.width=Math.min(stage.clientWidth,1200);canvas.height=Math.min(stage.clientHeight,760);}
+window.addEventListener('resize',resize);
+function setupLegend(){const l=document.getElementById('legend');l.innerHTML='';
+ ENEMIES.forEach(e=>{const row=document.createElement('div');row.innerHTML='<i style="background:'+e.col+'"></i>'+e.name;l.appendChild(row);});}
+function boot(seedStr){currentSeed=seedStr||'arabella';seedNum=hashSeed(currentSeed);
+ document.getElementById('floorTag').textContent='SECTOR 01 · SEED '+currentSeed.toUpperCase();
+ document.getElementById('seedInput').value=currentSeed;
+ buildTileset(seedNum);genMap(seedNum);initState();setupLegend();updateHUD();}
+document.getElementById('regen').addEventListener('click',()=>{const s=document.getElementById('seedInput').value.trim()||'arabella';boot(s);});
 document.getElementById('seedInput').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('regen').click();});
-resize();buildLegend();startGame(initSeed);requestAnimationFrame(loop);
+const urlSeed=new URLSearchParams(location.search).get('seed');
+resize();boot(urlSeed);
+let lastTime=performance.now(),fc=0,fpsTimer=0;
+function loop(now){const dt=Math.min(.06,(now-lastTime)/1000);lastTime=now;perf=now;
+ updatePlayer(dt);updateEnemies(dt);render();updateHUD();
+ fc++;fpsTimer+=dt;if(fpsTimer>=.5){document.getElementById('fps').textContent=Math.round(fc/fpsTimer)+' FPS';fc=0;fpsTimer=0;}
+ requestAnimationFrame(loop);}
+requestAnimationFrame(loop);
 </script>
 </body>
 </html>
