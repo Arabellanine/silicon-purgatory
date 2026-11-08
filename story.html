@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SILICON PURGATORY // PROLOGUE</title>
+<style>
+  :root{
+    --bg:#06070b;
+    --bg2:#0b0e16;
+    --ink:#c7d0e0;
+    --dim:#5a6478;
+    --crimson:#ff2b4e;
+    --crimson-dim:#7a1226;
+    --gold:#ffc14d;
+    --gold-dim:#8a6a1e;
+    --cyan:#49e2ff;
+    --cyan-dim:#1a5a66;
+    --rust:#c6602a;
+    --line:#1a2030;
+    --panel:#0a0d15;
+    --scan:rgba(0,0,0,.26);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:radial-gradient(120% 90% at 50% -10%, #0e1322 0%, #06070b 55%, #030407 100%);
+    color:var(--ink);
+    font-family:"Courier New",ui-monospace,Menlo,Consolas,monospace;
+    font-size:15px;
+    line-height:1.5;
+    overflow:hidden;
+    letter-spacing:.3px;
+    -webkit-font-smoothing:none;
+  }
+  .crt-scan{
+    pointer-events:none;position:fixed;inset:0;z-index:90;
+    background:repeating-linear-gradient(to bottom, transparent 0, transparent 2px, var(--scan) 3px, var(--scan) 4px);
+    mix-blend-mode:multiply;opacity:.6;
+  }
+  .crt-vignette{
+    pointer-events:none;position:fixed;inset:0;z-index:91;
+    background:radial-gradient(120% 100% at 50% 50%, transparent 55%, rgba(0,0,0,.65) 100%);
+  }
+  .crt-flicker{
+    pointer-events:none;position:fixed;inset:0;z-index:92;
+    background:rgba(73,226,255,.012);
+    animation:flick 6s steps(60) infinite;
+  }
+  @keyframes flick{0%,100%{opacity:.5} 7%{opacity:.9} 8%{opacity:.2} 40%{opacity:.6} 41%{opacity:1} 70%{opacity:.4}}
+  .stage{
+    position:relative;z-index:10;height:100vh;width:100%;
+    display:grid;grid-template-rows:auto 1fr auto;
+    max-width:1180px;margin:0 auto;padding:10px 14px 14px;
+  }
+  .hud{
+    display:flex;align-items:center;gap:14px;
+    border:1px solid var(--line);background:linear-gradient(180deg,#0b0f1a,#070a12);
+    padding:8px 12px;box-shadow:0 0 0 1px #000 inset, 0 0 20px rgba(0,0,0,.6);
+  }
+  .brand{display:flex;flex-direction:column;line-height:1.05}
+  .brand b{font-size:16px;letter-spacing:4px;color:var(--crimson);text-shadow:0 0 10px rgba(255,43,78,.5)}
+  .brand span{font-size:9px;letter-spacing:3px;color:var(--dim)}
+  .hud .spacer{flex:1}
+  .hud .tag{
+    font-size:9px;letter-spacing:2px;color:var(--gold);
+    border:1px solid var(--gold-dim);padding:3px 7px;background:rgba(255,193,77,.05);
+  }
+  .btn{
+    font-family:inherit;cursor:pointer;background:#0a0e18;color:var(--ink);
+    border:1px solid var(--line);padding:6px 11px;font-size:11px;letter-spacing:2px;
+    text-transform:uppercase;transition:.12s;box-shadow:0 1px 0 #000;
+    text-decoration:none;display:inline-flex;align-items:center;gap:6px;
+  }
+  .btn:hover{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 12px rgba(73,226,255,.35)}
+  .btn:active{transform:translateY(1px)}
+  .btn.warn:hover{border-color:var(--crimson);color:var(--crimson);box-shadow:0 0 12px rgba(255,43,78,.4)}
+  .btn.gold:hover{border-color:var(--gold);color:var(--gold);box-shadow:0 0 12px rgba(255,193,77,.35)}
+  .scene{
+    position:relative;overflow:hidden;border:1px solid var(--line);border-top:none;border-bottom:none;
+    display:grid;grid-template-columns:1fr;
+    background:linear-gradient(180deg, rgba(10,14,22,.2), rgba(3,4,7,.75));
+  }
+  .backdrop{position:absolute;inset:0;z-index:0;overflow:hidden}
+  .grid-floor{
+    position:absolute;left:-20%;right:-20%;bottom:-10%;height:62%;
+    background:
+      linear-gradient(transparent 0, rgba(73,226,255,.10) 100%),
+      repeating-linear-gradient(90deg, rgba(73,226,255,.14) 0 1px, transparent 1px 64px),
+      repeating-linear-gradient(0deg, rgba(73,226,255,.14) 0 1px, transparent 1px 48px);
+    transform:perspective(420px) rotateX(70deg);transform-origin:bottom;opacity:.35;
+    animation:floor 10s linear infinite;mask-image:linear-gradient(transparent, #000 40%);
+  }
+  @keyframes floor{from{background-position:0 0,0 0,0 0}to{background-position:0 0,0 0,0 48px}}
+  .stars{position:absolute;inset:0;opacity:.5}
+  .haze{
+    position:absolute;inset:0;
+    background:radial-gradient(60% 50% at 50% 30%, rgba(255,43,78,.07), transparent 70%);
+    mix-blend-mode:screen;
+  }
+  .cast{
+    position:relative;z-index:2;height:100%;display:flex;align-items:flex-end;justify-content:center;
+    gap:30px;padding:20px 24px 12px;
+  }
+  .portrait{
+    position:relative;width:min(300px,38vw);filter:drop-shadow(0 10px 24px rgba(0,0,0,.7));
+    transition:.35s cubic-bezier(.2,.7,.3,1);opacity:.35;transform:translateY(6px) scale(.97) saturate(.6);
+  }
+  .portrait svg{display:block;width:100%;height:auto;image-rendering:pixelated}
+  .portrait.active{opacity:1;transform:translateY(0) scale(1) saturate(1)}
+  .portrait.active::after{
+    content:"";position:absolute;inset:-6px;pointer-events:none;
+    background:radial-gradient(60% 55% at 50% 42%, rgba(73,226,255,.12), transparent 70%);
+  }
+  .nameplate{
+    position:absolute;top:8px;left:50%;transform:translateX(-50%);
+    font-size:9px;letter-spacing:3px;color:var(--dim);border:1px solid var(--line);
+    padding:2px 8px;white-space:nowrap;background:#05070c;
+  }
+  .portrait.active .nameplate{color:var(--cyan);border-color:var(--cyan-dim)}
+  .chapter{
+    position:absolute;top:12px;left:12px;z-index:3;font-size:10px;letter-spacing:3px;color:var(--gold);
+    border-left:3px solid var(--gold);padding:4px 10px;
+    background:linear-gradient(90deg, rgba(255,193,77,.08), transparent);
+  }
+  .chapter small{display:block;color:var(--dim);letter-spacing:2px;font-size:9px}
+  .dock{
+    border:1px solid var(--line);background:linear-gradient(180deg,#0a0e18,#05070c);
+    box-shadow:0 0 0 1px #000 inset,0 -6px 30px rgba(0,0,0,.6);padding:0;
+  }
+  .speakerbar{
+    display:flex;align-items:center;gap:10px;padding:6px 14px;border-bottom:1px solid var(--line);
+    background:rgba(255,43,78,.04);min-height:30px;
+  }
+  .speakerbar .who{
+    font-size:12px;letter-spacing:3px;font-weight:bold;color:var(--crimson);
+    text-shadow:0 0 8px rgba(255,43,78,.4);
+  }
+  .speakerbar .who.gold{color:var(--gold);text-shadow:0 0 8px rgba(255,193,77,.4)}
+  .speakerbar .who.cyan{color:var(--cyan);text-shadow:0 0 8px rgba(73,226,255,.4)}
+  .speakerbar .who.dim{color:var(--dim);text-shadow:none}
+  .speakerbar .meta{margin-left:auto;font-size:9px;letter-spacing:2px;color:var(--dim)}
+  .dialogue{
+    padding:16px 18px;min-height:112px;font-size:16px;line-height:1.65;color:var(--ink);
+    position:relative;
+  }
+  .dialogue .cursor{
+    display:inline-block;width:9px;height:17px;vertical-align:-3px;background:var(--cyan);
+    margin-left:2px;animation:blink .8s steps(1) infinite;box-shadow:0 0 8px var(--cyan);
+  }
+  @keyframes blink{50%{opacity:0}}
+  .dialogue em{color:var(--gold);font-style:normal}
+  .dialogue .sys{color:var(--cyan)}
+  .dialogue .red{color:var(--crimson)}
+  .controls{
+    display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px 14px;
+    border-top:1px solid var(--line);background:rgba(0,0,0,.25);
+  }
+  .choices{display:flex;flex-wrap:wrap;gap:8px;flex:1;min-width:0}
+  .choice{
+    font-family:inherit;cursor:pointer;text-align:left;background:#070b14;color:var(--ink);
+    border:1px solid var(--line);border-left:3px solid var(--crimson-dim);
+    padding:9px 13px;font-size:13px;letter-spacing:.5px;transition:.12s;flex:1 1 220px;
+  }
+  .choice:hover{
+    border-left-color:var(--crimson);color:#fff;background:#0d1320;
+    box-shadow:0 0 14px rgba(255,43,78,.18);
+  }
+  .choice .mk{color:var(--crimson);margin-right:8px;font-weight:bold}
+  .advance{
+    font-family:inherit;cursor:pointer;background:#0a0e18;border:1px solid var(--cyan-dim);
+    color:var(--cyan);padding:9px 18px;font-size:12px;letter-spacing:3px;text-transform:uppercase;
+    animation:pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse{50%{box-shadow:0 0 16px rgba(73,226,255,.45);border-color:var(--cyan)}}
+  .advance:hover{background:#0d1726}
+  .foot{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;border:1px solid var(--line);
+    border-top:none;background:linear-gradient(180deg,#070a12,#04050a);padding:7px 12px;
+  }
+  .foot .sel{display:flex;gap:4px;align-items:center;margin-right:auto;flex-wrap:wrap}
+  .foot .sel b{font-size:9px;letter-spacing:2px;color:var(--dim);margin-right:4px}
+  .chip{
+    font-size:9px;letter-spacing:2px;padding:4px 8px;cursor:pointer;border:1px solid var(--line);
+    color:var(--dim);background:#05070c;
+  }
+  .chip:hover{color:var(--ink);border-color:var(--cyan-dim)}
+  .chip.on{color:var(--crimson);border-color:var(--crimson-dim);background:rgba(255,43,78,.07)}
+  .vu{display:flex;gap:2px;align-items:flex-end;height:14px;margin:0 6px}
+  .vu i{width:3px;background:var(--cyan-dim);height:3px;transition:height .08s}
+  .title{
+    position:absolute;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:18px;text-align:center;padding:24px;
+    background:radial-gradient(90% 90% at 50% 40%, rgba(6,7,11,.72), rgba(3,4,7,.96));
+    backdrop-filter:blur(2px);
+  }
+  .title h1{
+    margin:0;font-size:clamp(28px,7vw,64px);letter-spacing:10px;line-height:1;color:#fff;
+    text-shadow:0 0 2px #fff, 4px 0 0 var(--crimson), -4px 0 0 var(--cyan);
+    animation:glitchT 3.5s steps(2) infinite;
+  }
+  @keyframes glitchT{
+    0%,92%,100%{transform:translate(0,0)} 93%{transform:translate(-3px,1px)}
+    95%{transform:translate(3px,-1px)} 97%{transform:translate(-2px,0)}
+  }
+  .title h2{margin:0;font-size:clamp(11px,2.4vw,15px);letter-spacing:8px;color:var(--gold);font-weight:normal}
+  .title p{max-width:520px;color:var(--dim);font-size:12px;line-height:1.8;letter-spacing:1px}
+  .title .enter{
+    margin-top:6px;font-size:14px;letter-spacing:5px;padding:14px 30px;border:1px solid var(--crimson);
+    color:var(--crimson);background:rgba(255,43,78,.06);cursor:pointer;
+    animation:pulseRed 1.4s ease-in-out infinite;
+  }
+  @keyframes pulseRed{50%{box-shadow:0 0 24px rgba(255,43,78,.5);background:rgba(255,43,78,.12)}}
+  .title .enter:hover{color:#fff;background:rgba(255,43,78,.2)}
+  .title .warn{font-size:9px;color:var(--dim);letter-spacing:2px}
+  .hidden{display:none !important}
+  @media(max-width:720px){
+    .portrait{width:44vw} .cast{gap:10px;padding:14px 8px 6px}
+    .dialogue{font-size:14px;min-height:96px} .brand b{font-size:13px;letter-spacing:2px}
+  }
+</style>
+</head>
+<body>
+<div class="crt-scan"></div>
+<div class="crt-vignette"></div>
+<div class="crt-flicker"></div>
+<div class="stage">
+  <header class="hud">
+    <div class="brand">
+      <b>SILICON&nbsp;PURGATORY</b>
+      <span>PROLOGUE // SCENE VIEWER v0.7</span>
+    </div>
+    <span class="tag" id="sceneTag">SCENE 00</span>
+    <div class="spacer"></div>
+    <button class="btn gold" id="audioBtn">♪ AUDIO: OFF</button>
+    <button class="btn" id="restartBtn">⟲ REBOOT</button>
+  </header>
+  <main class="scene">
+    <div class="backdrop">
+      <canvas class="stars" id="stars"></canvas>
+      <div class="grid-floor"></div>
+      <div class="haze"></div>
+    </div>
+    <div class="chapter" id="chapter">
+      SCENE 00 — COLD BOOT
+      <small>sector: the Rack // depth 0</small>
+    </div>
+    <div class="cast" id="cast"></div>
+    <div class="title" id="titleScreen">
+      <h2>A DEAD MACHINE REMEMBERS YOU</h2>
+      <h1>SILICON<br>PURGATORY</h1>
+      <p>In the flooded server-catacomb beneath the Rack, decommissioned frames
+         loop their final seconds forever. You are <em>Arabella</em> — horned,
+         crimson-eyed, the last pilot still warm. The Archon <em>Justitia</em> is
+         counting.</p>
+      <button class="enter" id="enterBtn">▶ COLD&nbsp;BOOT</button>
+      <div class="warn">headphones recommended · click enables procedural audio</div>
+    </div>
+  </main>
+  <section class="dock">
+    <div class="speakerbar">
+      <span class="who" id="speaker">—</span>
+      <span class="meta" id="lineMeta">00 / 00</span>
+    </div>
+    <div class="dialogue" id="dialogue"><span class="cursor"></span></div>
+    <div class="controls">
+      <div class="choices" id="choices"></div>
+      <button class="advance" id="advanceBtn">NEXT ▶</button>
+    </div>
+  </section>
+  <footer class="foot">
+    <div class="sel">
+      <b>JUMP&nbsp;TO&nbsp;SCENE:</b>
+      <span class="chip on" data-scene="0">00</span>
+      <span class="chip" data-scene="1">01</span>
+      <span class="chip" data-scene="2">02</span>
+      <span class="chip" data-scene="3">03</span>
+    </div>
+    <div class="vu" id="vu"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <a class="btn warn" href="dungeon.html">▶ ENTER DUNGEON</a>
+    <a class="btn" href="index.html">⚔️ CYCLE ARENA</a>
+  </footer>
+</div>
+<script>
+const P = {};
+P.arabella = `
+<svg viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision">
+  <defs>
+    <linearGradient id="aHelm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a3350"/><stop offset="1" stop-color="#11162a"/></linearGradient>
+    <radialGradient id="aEye" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#ffd0d8"/><stop offset=".4" stop-color="#ff2b4e"/><stop offset="1" stop-color="#7a0f22"/></radialGradient>
+  </defs>
+  <path d="M18 160 L22 118 Q60 100 98 118 L102 160 Z" fill="#141a2e" stroke="#2a3350" stroke-width="2"/>
+  <path d="M40 160 L44 120 L76 120 L80 160" fill="#0c1020"/>
+  <path d="M30 128 L48 122 L48 160 L28 160 Z" fill="#1c2340"/>
+  <path d="M90 128 L72 122 L72 160 L92 160 Z" fill="#1c2340"/>
+  <rect x="48" y="108" width="24" height="12" fill="#232c48" stroke="#3a466e" stroke-width="2"/>
+  <circle cx="54" cy="114" r="1.6" fill="#49e2ff"/><circle cx="66" cy="114" r="1.6" fill="#49e2ff"/>
+  <path d="M40 104 Q36 60 60 54 Q84 60 80 104 Q60 114 40 104 Z" fill="url(#aHelm)" stroke="#49566e" stroke-width="2"/>
+  <path d="M46 98 Q44 68 60 64 Q76 68 74 98 Q60 108 46 98 Z" fill="#d9b7a8"/>
+  <path d="M46 98 Q44 68 60 64 Q76 68 74 98 Q60 108 46 98 Z" fill="#000" opacity="0.08"/>
+  <path d="M42 60 Q24 44 18 20 Q34 34 44 52 Z" fill="#20283f" stroke="#ff2b4e" stroke-width="1.5"/>
+  <path d="M78 60 Q96 44 102 20 Q86 34 76 52 Z" fill="#20283f" stroke="#ff2b4e" stroke-width="1.5"/>
+  <path d="M40 58 Q28 50 24 38" fill="none" stroke="#7a1226" stroke-width="1"/>
+  <path d="M80 58 Q92 50 96 38" fill="none" stroke="#7a1226" stroke-width="1"/>
+  <rect x="44" y="76" width="32" height="4" fill="#0a0e18" opacity=".5"/>
+  <ellipse cx="52" cy="82" rx="5" ry="4" fill="url(#aEye)"/>
+  <ellipse cx="68" cy="82" rx="5" ry="4" fill="url(#aEye)"/>
+  <circle cx="52" cy="82" r="1.3" fill="#fff"/><circle cx="68" cy="82" r="1.3" fill="#fff"/>
+  <path d="M46 76 L58 78 M62 78 L74 76" stroke="#20283f" stroke-width="2" fill="none"/>
+  <rect x="54" y="94" width="12" height="3" rx="1.5" fill="#7a1226"/>
+  <path d="M44 66 Q40 90 44 104 M76 66 Q80 90 76 104" stroke="#2a3350" stroke-width="2" fill="none"/>
+  <rect x="70" y="86" width="3" height="3" fill="#49e2ff"/>
+</svg>`;
+P.justitia = `
+<svg viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="jBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a1c12"/><stop offset="1" stop-color="#090a06"/></linearGradient>
+    <linearGradient id="jGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff0c0"/><stop offset=".5" stop-color="#ffc14d"/><stop offset="1" stop-color="#8a6a1e"/></linearGradient>
+  </defs>
+  <path d="M26 160 L30 96 Q60 78 90 96 L94 160 Z" fill="url(#jBody)" stroke="#5a4a1e" stroke-width="2"/>
+  <path d="M60 96 L60 160" stroke="#8a6a1e" stroke-width="1" opacity=".6"/>
+  <path d="M40 150 L44 110 M80 150 L76 110 M52 155 L54 118 M68 155 L66 118" stroke="#8a6a1e" stroke-width="1" fill="none" opacity=".7"/>
+  <g stroke="url(#jGold)" stroke-width="1.6" fill="none">
+    <path d="M60 118 L60 134"/><path d="M48 124 L72 124"/><path d="M48 124 L44 132 L52 132 Z"/><path d="M72 124 L68 132 L76 132 Z"/>
+  </g>
+  <circle cx="60" cy="120" r="1.6" fill="#ffc14d"/>
+  <path d="M26 100 L46 94 L44 112 L28 118 Z" fill="#20231a" stroke="url(#jGold)" stroke-width="2"/>
+  <path d="M94 100 L74 94 L76 112 L92 118 Z" fill="#20231a" stroke="url(#jGold)" stroke-width="2"/>
+  <path d="M38 94 L48 82 L60 86 L72 82 L82 94 Z" fill="#20231a" stroke="url(#jGold)" stroke-width="2"/>
+  <path d="M50 84 L50 72 M60 86 L60 68 M70 84 L70 72" stroke="url(#jGold)" stroke-width="2"/>
+  <circle cx="50" cy="71" r="2" fill="#ffc14d"/><circle cx="60" cy="66" r="2.4" fill="#fff0c0"/><circle cx="70" cy="71" r="2" fill="#ffc14d"/>
+  <path d="M44 86 Q42 50 60 46 Q78 50 76 86 Q60 96 44 86 Z" fill="#141610" stroke="url(#jGold)" stroke-width="2"/>
+  <rect x="46" y="64" width="28" height="7" rx="2" fill="#2a2410"/>
+  <rect x="48" y="66" width="24" height="3" fill="url(#jGold)"/><rect x="48" y="66" width="24" height="3" fill="#ffe9a8" opacity=".6"/>
+  <circle cx="53" cy="67.5" r="1" fill="#fff"/><circle cx="67" cy="67.5" r="1" fill="#fff"/>
+  <path d="M60 46 L60 62 M50 50 L54 62 M70 50 L66 62" stroke="#5a4a1e" stroke-width="1"/>
+  <path d="M52 78 L68 78 M54 82 L66 82" stroke="#8a6a1e" stroke-width="1.4"/>
+  <ellipse cx="60" cy="34" rx="26" ry="6" fill="none" stroke="url(#jGold)" stroke-width="1.5" opacity=".8"/>
+</svg>`;
+P.ra0 = `
+<svg viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+  <defs>
+    <linearGradient id="rStone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a4150"/><stop offset="1" stop-color="#171b24"/></linearGradient>
+  </defs>
+  <rect x="24" y="150" width="72" height="10" fill="#10141c" stroke="#2a3140" stroke-width="2"/>
+  <rect x="34" y="128" width="52" height="22" rx="3" fill="url(#rStone)" stroke="#49566e" stroke-width="2"/>
+  <rect x="40" y="108" width="40" height="22" rx="3" fill="url(#rStone)" stroke="#49566e" stroke-width="2"/>
+  <rect x="45" y="90"  width="30" height="20" rx="3" fill="url(#rStone)" stroke="#49566e" stroke-width="2"/>
+  <circle cx="40" cy="139" r="1.6" fill="#7a1226"/><circle cx="80" cy="139" r="1.6" fill="#7a1226"/>
+  <circle cx="46" cy="119" r="1.6" fill="#1a5a66"/><circle cx="74" cy="119" r="1.6" fill="#1a5a66"/>
+  <rect x="38" y="132" width="44" height="3" fill="#0a0e18"/><rect x="44" y="112" width="32" height="3" fill="#0a0e18"/>
+  <path d="M34 128 Q28 120 40 108 M86 128 Q92 120 80 108" stroke="#2a3140" stroke-width="2" fill="none"/>
+  <path d="M40 90 Q34 80 45 72 M80 90 Q86 80 75 72" stroke="#2a3140" stroke-width="2" fill="none"/>
+  <path d="M44 90 L48 62 Q60 54 72 62 L76 90 Z" fill="#1b2130" stroke="#49566e" stroke-width="2"/>
+  <rect x="50" y="64" width="20" height="16" rx="2" fill="#05070c"/>
+  <circle cx="60" cy="72" r="6" fill="#0a1a1e" stroke="#1a5a66" stroke-width="2"/>
+  <circle cx="60" cy="72" r="2.6" fill="#49e2ff"/>
+  <rect x="48" y="60" width="24" height="3" fill="#1a5a66"/>
+  <path d="M60 54 L60 34" stroke="#49566e" stroke-width="2"/>
+  <path d="M52 40 L68 40" stroke="#7a1226" stroke-width="2"/>
+  <circle cx="60" cy="32" r="2.5" fill="#ff2b4e"/>
+  <text x="60" y="146" font-size="7" fill="#49566e" text-anchor="middle" font-family="monospace">RA-0</text>
+</svg>`;
+P.husk = `
+<svg viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="hBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#222634"/><stop offset="1" stop-color="#0a0c14"/></linearGradient>
+  </defs>
+  <path d="M28 160 L34 112 Q60 100 86 112 L92 160 Z" fill="url(#hBody)" stroke="#2a3140" stroke-width="2" opacity=".92"/>
+  <path d="M44 120 L44 150 M52 118 L52 150 M60 116 L60 150 M68 118 L68 150 M76 120 L76 150" stroke="#161a26" stroke-width="2"/>
+  <path d="M40 130 L80 128 M38 140 L82 138" stroke="#7a1226" stroke-width="1" opacity=".7"/>
+  <g transform="rotate(-8 60 86)">
+    <path d="M44 104 Q40 62 60 56 Q80 62 76 104 Q60 112 44 104 Z" fill="#1b2030" stroke="#333b4e" stroke-width="2"/>
+    <path d="M48 100 Q46 68 60 64 Q74 68 72 100 Q60 108 48 100 Z" fill="#3a3030"/>
+    <path d="M60 66 L54 82 L62 90 L56 104" stroke="#0a0c14" stroke-width="1.5" fill="none"/>
+    <rect x="48" y="78" width="9" height="4" fill="#49e2ff" opacity=".85"/>
+    <rect x="63" y="78" width="9" height="4" fill="#49e2ff" opacity=".4"/>
+    <rect x="52" y="94" width="16" height="3" fill="#111622"/>
+  </g>
+  <rect x="30" y="86" width="60" height="2" fill="#49e2ff" opacity=".25"/>
+  <rect x="26" y="126" width="70" height="2" fill="#ff2b4e" opacity=".2"/>
+  <text x="60" y="155" font-size="6" fill="#1a5a66" text-anchor="middle" font-family="monospace">0x00 BOOT…</text>
+</svg>`;
+P.fan = `
+<svg viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="fWater" cx=".5" cy=".4" r=".6"><stop offset="0" stop-color="#123036"/><stop offset="1" stop-color="#05121a"/></radialGradient>
+  </defs>
+  <rect x="0" y="96" width="120" height="64" fill="url(#fWater)" opacity=".55"/>
+  <path d="M0 98 Q30 92 60 98 T120 98" stroke="#1a5a66" stroke-width="1.5" fill="none" opacity=".6"/>
+  <circle cx="34" cy="128" r="2" fill="#49e2ff" opacity=".3"/><circle cx="88" cy="140" r="1.5" fill="#49e2ff" opacity=".25"/>
+  <rect x="24" y="30" width="72" height="72" rx="6" fill="#10151e" stroke="#2a3140" stroke-width="3"/>
+  <circle cx="60" cy="66" r="12" fill="#0a0f16" stroke="#333b4e" stroke-width="2"/>
+  <g fill="#1b222e" stroke="#2a3140" stroke-width="1" opacity=".95">
+    <path d="M60 66 Q46 44 32 40 Q50 48 58 64 Z"/>
+    <path d="M60 66 Q82 50 92 36 Q78 52 62 64 Z"/>
+    <path d="M60 66 Q84 78 94 92 Q78 82 62 68 Z"/>
+    <path d="M60 66 Q50 90 40 96 Q54 82 58 68 Z"/>
+  </g>
+  <circle cx="60" cy="66" r="5" fill="#05121a"/>
+  <circle cx="60" cy="66" r="2.3" fill="#49e2ff">
+    <animate attributeName="opacity" values=".3;.9;.3" dur="3s" repeatCount="indefinite"/>
+  </circle>
+  <text x="60" y="26" font-size="6" fill="#1a5a66" text-anchor="middle" font-family="monospace">RPM 0000</text>
+</svg>`;
+
+const CHARS = {
+  arabella: {name:'ARABELLA', cls:'', svg:P.arabella},
+  justitia: {name:'JUSTITIA', cls:'gold', svg:P.justitia},
+  ra0: {name:'RA-0', cls:'cyan', svg:P.ra0},
+  husk: {name:'[HUSK]', cls:'dim', svg:P.husk},
+  fan: {name:'DROWNED FAN', cls:'cyan', svg:P.fan},
+  sys: {name:'SYSTEM', cls:'cyan', svg:null},
+  narr: {name:'…', cls:'dim', svg:null}
+};
+
+const SCENES = [
+  {
+    tag:'SCENE 00', title:'SCENE 00 — COLD BOOT', sub:'sector: the Rack // depth 0',
+    lines:[
+      {s:'sys', cast:[], t:'<span class="sys">POWER-ON SELF TEST…</span> cores: 1 warm / 2047 cold. Coolant: <span class="red">FLOODED</span>. Soul: present (unverified).'},
+      {s:'arabella', cast:['arabella'], t:'…I hate waking up down here. The dark always tastes like old solder.'},
+      {s:'arabella', cast:['arabella'], t:'My horns are pinging something. Metal. Big. <em>Dead</em> — the way only machines in Silicon Purgatory can be dead and still humming.'},
+      {s:'sys', cast:['arabella'], t:'<span class="sys">PILOT ID:</span> ARABELLA. <span class="sys">STATUS:</span> last frame still drawing current in Sector R. <span class="red">All others: looping.</span>'},
+      {s:'arabella', cast:['arabella'], t:'Looping. Right. Twenty-thousand husks replaying the second they died. Lucky me — I get to walk through their reruns.'},
+      {s:'arabella', cast:['arabella'], t:'Okay, Arabella. Crimson eyes on. Let\'s see how far down the Rack goes.',
+       choices:[
+         {label:'Light the horn-beacon and announce yourself.', go:1},
+         {label:'Stay dark. Move quiet through the catacomb.', go:1}
+       ]}
+    ]
+  },
+  {
+    tag:'SCENE 01', title:'SCENE 01 — BOOT-LOOP HUSK', sub:'sector: the Rack // depth 1',
+    lines:[
+      {s:'narr', cast:[], t:'A frame is slumped against the server-pillars, head twitching on a three-second cadence. It never finishes starting up.'},
+      {s:'husk', cast:['husk'], t:'0x00 BOOT… hello pilot. hello pilot. hel— <span class="red">[stack overflow]</span> …hello pilot.'},
+      {s:'arabella', cast:['arabella','husk'], t:'Easy. Easy. I hear you. You\'ve been stuck on the same instruction for… how long?'},
+      {s:'husk', cast:['arabella','husk'], t:'since the flood. since the <em>Verdict</em>. we were told to wait for judgment. we are still— we are still— we are still waiting.'},
+      {s:'arabella', cast:['arabella','husk'], t:'The Verdict. Justitia\'s little housekeeping. She doesn\'t delete you — she just leaves you looping until you forget you were ever running.'},
+      {s:'husk', cast:['arabella','husk'], t:'if you break my loop i will not boot again. if you leave it, i boot forever and never load. <span class="sys">which is mercy, pilot?</span>',
+       choices:[
+         {label:'“I\'ll break the loop. Let you rest.”', go:'cont_mercy'},
+         {label:'“I can\'t choose that for you. Keep your loop.”', go:'cont_spare'},
+         {label:'“Tell me where Justitia renders judgment.”', go:'cont_info'}
+       ]},
+      {id:'cont_mercy', s:'arabella', cast:['arabella','husk'], t:'I\'ll break it. One clean cut. You won\'t feel the next boot.'},
+      {id:'cont_mercy', s:'husk', cast:['husk'], t:'…thank you, pil— <span class="red">[process terminated]</span>'},
+      {id:'cont_mercy', s:'sys', cast:[], t:'<span class="sys">HUSK OFFLINE.</span> A single LED goes dark in a wall of ten thousand still blinking.', go:2},
+      {id:'cont_spare', s:'husk', cast:['arabella','husk'], t:'then i boot. then i boot. then i— <span class="dim">(it almost sounds grateful.)</span>', go:2},
+      {id:'cont_info', s:'husk', cast:['arabella','husk'], t:'down. past the Drowned Fan that guards the coolant gate. the Archon holds court at depth 3, where the Scouts triage the dead.'},
+      {id:'cont_info', s:'arabella', cast:['arabella','husk'], t:'Coolant gate. Scouts. Of course she keeps a filing system for the damned.', go:2}
+    ]
+  },
+  {
+    tag:'SCENE 02', title:'SCENE 02 — THE DROWNED FAN', sub:'sector: coolant gate // depth 2',
+    lines:[
+      {s:'narr', cast:[], t:'Black coolant up to the knee. A chassis-fan the size of a door sits half-submerged in the wall, blades frozen, one blue eye glowing in its drowned hub.'},
+      {s:'fan', cast:['fan'], t:'<span class="sys">rpm zero.</span> i turned for forty years to keep the cores cool. then the flood came up and i kept turning until i couldn\'t. now i only… <em>remember</em> turning.'},
+      {s:'arabella', cast:['arabella','fan'], t:'You\'re the coolant gate. The husk said you guard the way down.'},
+      {s:'fan', cast:['arabella','fan'], t:'i do not guard. i <em>drown</em> what passes. the water is patient. are you warm, pilot? warm things sink so beautifully.'},
+      {s:'arabella', cast:['arabella','fan'], t:'I\'m the warmest thing left in this whole tomb, and I\'m not sinking today. Open the gate.'},
+      {s:'fan', cast:['arabella','fan'], t:'spin me. one honest rotation and the gate forgets its lock. but my bearings are seized with grief. what will you give to turn me?',
+       choices:[
+         {label:'Bleed heat from your reactor to melt the ice in its bearings.', go:'cont_heat'},
+         {label:'Pour your own stored coolant to flush the seized hub.', go:'cont_flush'},
+         {label:'Refuse. Force the gate with your horns.', go:'cont_force'}
+       ]},
+      {id:'cont_heat', s:'sys', cast:['fan'], t:'<span class="sys">REACTOR −12%.</span> The ice sublimes. With a groan older than the flood, the blades complete one full turn.'},
+      {id:'cont_heat', s:'fan', cast:['arabella','fan'], t:'ohh… i am turning. i am <em>turning</em>. go down, warm thing. tell the Archon a fan still remembers its purpose.', go:3},
+      {id:'cont_flush', s:'sys', cast:['fan'], t:'<span class="sys">COOLANT RESERVE −40%.</span> Clean fluid washes the grief from its hub. One slow, grateful rotation.'},
+      {id:'cont_flush', s:'fan', cast:['arabella','fan'], t:'the lock forgets. the water parts. <span class="dim">(you\'ll regret spending that reserve, deeper down.)</span>', go:3},
+      {id:'cont_force', s:'arabella', cast:['arabella','fan'], t:'No deals with ghosts. Horns down — <span class="red">MOVE.</span>'},
+      {id:'cont_force', s:'sys', cast:[], t:'<span class="red">STRUCTURAL SHEAR.</span> The gate buckles. So does something in your left horn. The Fan screams in frozen silence as you pass.'},
+      {id:'cont_force', s:'fan', cast:['fan'], t:'…you broke me again. now we both remember being broken. <span class="dim">how warm.</span>', go:3}
+    ]
+  },
+  {
+    tag:'SCENE 03', title:'SCENE 03 — SCOUTS', sub:'sector: court of verdict // depth 3',
+    lines:[
+      {s:'narr', cast:[], t:'Depth 3 opens into a cathedral of racks. A cairn of dead cores stands sentinel — stone upon stone of silenced machines — its single cyan lens tracking you.'},
+      {s:'ra0', cast:['ra0'], t:'HALT. I am RA-0, the Cairn-Frame. I am built from the Scouts who came before you and failed the Verdict. I triage the dead.'},
+      {s:'arabella', cast:['arabella','ra0'], t:'You\'re a monument made of pilots. Charming. Justitia really doesn\'t waste parts.'},
+      {s:'ra0', cast:['arabella','ra0'], t:'The Archon wastes nothing. You are the last warm frame. By law you must be measured before you may descend to her court.'},
+      {s:'justitia', cast:['justitia','ra0'], t:'And measured you shall be. <span class="dim">(A golden visor ignites in the dark above the cairn — a single cold slit of light.)</span>'},
+      {s:'justitia', cast:['justitia','ra0'], t:'I am Justitia. Archon of this Purgatory. I do not punish, pilot. I simply decide what deserves to keep running. You have been… inefficient with your warmth.'},
+      {s:'arabella', cast:['arabella','justitia'], t:'I\'ve been <em>alive</em> with it. That\'s not a crime where I come from.'},
+      {s:'justitia', cast:['arabella','justitia'], t:'There is no “where you come from” anymore. There is only the Rack, and the Verdict, and the question of whether you kneel. RA-0 — present the choice.'},
+      {s:'ra0', cast:['arabella','ra0'], t:'Three roads descend from the Court. Each ends at the Archon. None end the same. <span class="sys">Choose your descent, last pilot.</span>',
+       choices:[
+         {label:'“I\'ll pass your trial. Open the dungeon.”'},
+         {label:'“I\'ll tear down your cairn first.”'},
+         {label:'“Not today, Archon. I\'m walking back up.”'}
+       ]},
+      {s:'justitia', cast:['justitia','ra0'], t:'<span class="gold">The Verdict is entered.</span> Descend, Arabella — the Purgatory is listening, and it has been so very lonely for something warm.'},
+      {s:'sys', cast:[], t:'<span class="sys">PROLOGUE COMPLETE.</span> Two paths open: <span class="red">▶ ENTER DUNGEON</span> to begin the descent — or <span class="sys">⚔️ CYCLE ARENA</span> to test combat protocols.'}
+    ]
+  }
+];
+
+const el = id => document.getElementById(id);
+const dialogue = el('dialogue'), speaker = el('speaker'), choicesBox = el('choices');
+const advanceBtn = el('advanceBtn'), castBox = el('cast'), lineMeta = el('lineMeta');
+const chapter = el('chapter'), sceneTag = el('sceneTag');
+
+let si = 0, ptr = 0, typing = false, typeTimer = null, shownText = '', currentCast = [];
+
+function idIndex(scene, id){ return scene.lines.findIndex(l => l.id === id); }
+function currentLine(){ return SCENES[si].lines[ptr]; }
+
+function loadScene(n, keepTitle){
+  si = Math.max(0, Math.min(SCENES.length-1, n));
+  ptr = 0;
+  const sc = SCENES[si];
+  chapter.innerHTML = sc.title + '<small>'+sc.sub+'</small>';
+  sceneTag.textContent = sc.tag;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on', +c.dataset.scene===si));
+  currentCast = [];
+  renderCast([]);
+  if(!keepTitle) showLine();
+}
+
+function renderCast(keys){
+  const want = keys.filter(k => CHARS[k] && CHARS[k].svg);
+  const sig = want.join(',');
+  if(sig === currentCast.join(',')) { highlightActive(keys); return; }
+  currentCast = want.slice();
+  castBox.innerHTML = '';
+  want.forEach(k=>{
+    const d = document.createElement('div');
+    d.className='portrait'; d.dataset.key=k;
+    d.innerHTML = CHARS[k].svg + '<div class="nameplate">'+CHARS[k].name+'</div>';
+    castBox.appendChild(d);
+  });
+  highlightActive(keys);
+}
+
+function highlightActive(keys){
+  const speakerKey = keys._speaker;
+  castBox.querySelectorAll('.portrait').forEach(p=>{
+    p.classList.toggle('active', p.dataset.key===speakerKey);
+  });
+}
+
+function showLine(){
+  const line = currentLine();
+  if(!line){ endScene(); return; }
+  const ch = CHARS[line.s] || CHARS.narr;
+  speaker.textContent = ch.name;
+  speaker.className = 'who ' + (ch.cls||'');
+  let castKeys = line.cast ? line.cast.slice() : (ch.svg ? [line.s] : []);
+  castKeys._speaker = ch.svg ? line.s : null;
+  renderCast(castKeys);
+  highlightActive(castKeys);
+  lineMeta.textContent = String(ptr+1).padStart(2,'0') + ' / ' + SCENES[si].lines.length.toString().padStart(2,'0');
+  choicesBox.innerHTML='';
+  advanceBtn.classList.add('hidden');
+  typeOut(line.t);
+}
+
+function typeOut(html){
+  typing = true;
+  clearInterval(typeTimer);
+  const tokens = tokenize(html);
+  let i=0; dialogue.innerHTML='';
+  const cur = document.createElement('span'); cur.className='cursor';
+  let buf='';
+  typeTimer = setInterval(()=>{
+    if(i>=tokens.length){ finishType(); return; }
+    const tk = tokens[i++];
+    if(tk.tag){ buf += tk.v; }
+    else {
+      buf += tk.v;
+      if(tk.v.trim()) blip();
+    }
+    dialogue.innerHTML = buf;
+    dialogue.appendChild(cur);
+  }, 16);
+  shownText = html;
+}
+
+function tokenize(html){
+  const out=[]; let i=0;
+  while(i<html.length){
+    if(html[i]==='<'){
+      let j=html.indexOf('>',i); if(j<0) j=html.length;
+      out.push({v:html.slice(i,j+1), tag:true}); i=j+1;
+    } else if(html[i]==='&'){
+      let j=html.indexOf(';',i); if(j<0||j-i>8){ out.push({v:html[i],tag:false}); i++; }
+      else { out.push({v:html.slice(i,j+1),tag:false}); i=j+1; }
+    } else { out.push({v:html[i],tag:false}); i++; }
+  }
+  return out;
+}
+
+function finishType(){
+  clearInterval(typeTimer); typing=false;
+  dialogue.innerHTML = shownText + '<span class="cursor"></span>';
+  const line = currentLine();
+  if(line.choices){ renderChoices(line.choices); }
+  else { advanceBtn.classList.remove('hidden'); }
+}
+
+function renderChoices(list){
+  choicesBox.innerHTML='';
+  list.forEach((c,idx)=>{
+    const b=document.createElement('button');
+    b.className='choice';
+    b.innerHTML='<span class="mk">'+String.fromCharCode(65+idx)+'</span>'+c.label;
+    b.onclick=()=>{ chord(); applyGo(c.go); };
+    choicesBox.appendChild(b);
+  });
+}
+
+function applyGo(go){
+  if(go===undefined||go===null){ nextLine(); return; }
+  if(typeof go==='number'){ loadScene(go); return; }
+  const idx = idIndex(SCENES[si], go);
+  if(idx>=0){ ptr=idx; showLine(); } else nextLine();
+}
+
+function nextLine(){
+  const line = currentLine();
+  if(line && line.go!==undefined){ applyGoFromLine(line.go); return; }
+  ptr++;
+  const nx = currentLine();
+  if(!nx){ endScene(); return; }
+  showLine();
+}
+
+function applyGoFromLine(go){
+  if(typeof go==='number'){ loadScene(go); return; }
+  const idx = idIndex(SCENES[si], go);
+  if(idx>=0){ ptr=idx; showLine(); } else endScene();
+}
+
+function endScene(){
+  if(si < SCENES.length-1){
+    advanceBtn.textContent='NEXT SCENE ▶';
+    advanceBtn.classList.remove('hidden');
+    advanceBtn.onclick=()=>{ chord(); loadScene(si+1); resetAdvance(); };
+  } else {
+    speaker.textContent='SYSTEM'; speaker.className='who cyan';
+    choicesBox.innerHTML=
+      '<a class="choice" style="border-left-color:var(--crimson);text-decoration:none" href="dungeon.html">'+
+        '<span class="mk">▶</span>ENTER THE DUNGEON — begin the descent</a>'+
+      '<a class="choice" style="border-left-color:var(--cyan-dim);text-decoration:none" href="index.html">'+
+        '<span class="mk">⚔️</span>CYCLE ARENA — test tactical engine</a>';
+    advanceBtn.classList.add('hidden');
+  }
+}
+
+function resetAdvance(){ advanceBtn.textContent='NEXT ▶'; advanceBtn.onclick=onAdvance; }
+function onAdvance(){
+  if(typing){
+    clearInterval(typeTimer); typing=false;
+    dialogue.innerHTML = shownText + '<span class="cursor"></span>';
+    const line=currentLine();
+    if(line.choices) renderChoices(line.choices);
+    else advanceBtn.classList.remove('hidden');
+    return;
+  }
+  const line=currentLine();
+  if(line && line.choices) return;
+  chip(); nextLine();
+}
+
+advanceBtn.onclick = onAdvance;
+dialogue.onclick = ()=>{ if(!currentLine()?.choices) onAdvance(); };
+document.querySelectorAll('.chip').forEach(c=>{
+  c.onclick=()=>{ chip(); loadScene(+c.dataset.scene); resetAdvance(); };
+});
+el('restartBtn').onclick=()=>{ chord(); loadScene(0); resetAdvance(); };
+
+let AC=null, master=null, droneOn=false, audioEnabled=false;
+let vuNodes=[...document.querySelectorAll('#vu i')], analyser=null, vuData=null;
+
+function initAudio(){
+  if(AC) return;
+  AC = new (window.AudioContext||window.webkitAudioContext)();
+  master = AC.createGain(); master.gain.value=0.0; master.connect(AC.destination);
+  analyser = AC.createAnalyser(); analyser.fftSize=64;
+  vuData = new Uint8Array(analyser.frequencyBinCount);
+  master.connect(analyser);
+  buildDrone();
+  rampMaster(0.55, 2.5);
+  loopVU();
+}
+
+function rampMaster(v,t){
+  const now=AC.currentTime;
+  master.gain.cancelScheduledValues(now);
+  master.gain.setValueAtTime(master.gain.value, now);
+  master.gain.linearRampToValueAtTime(v, now+t);
+}
+
+function buildDrone(){
+  const bus = AC.createGain(); bus.gain.value=0.5; bus.connect(master);
+  const lp = AC.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=320; lp.Q.value=6;
+  lp.connect(bus);
+  const lfo=AC.createOscillator(), lfoG=AC.createGain();
+  lfo.frequency.value=0.05; lfoG.gain.value=220;
+  lfo.connect(lfoG); lfoG.connect(lp.frequency); lfo.start();
+  const freqs=[55, 55.3, 82.4, 110, 164.8];
+  freqs.forEach((f,i)=>{
+    const o=AC.createOscillator();
+    o.type = i%2? 'sawtooth':'triangle';
+    o.frequency.value=f; o.detune.value=(i-2)*7;
+    const g=AC.createGain(); g.gain.value=0.12/(i*0.4+1);
+    o.connect(g); g.connect(lp); o.start();
+  });
+  const sub=AC.createOscillator(); sub.type='sine'; sub.frequency.value=27.5;
+  const subG=AC.createGain(); subG.gain.value=0.18;
+  sub.connect(subG); subG.connect(bus); sub.start();
+  const subLfo=AC.createOscillator(), subLfoG=AC.createGain();
+  subLfo.frequency.value=0.12; subLfoG.gain.value=0.12;
+  subLfo.connect(subLfoG); subLfoG.connect(subG.gain); subLfo.start();
+  const buf=AC.createBuffer(1, AC.sampleRate*2, AC.sampleRate);
+  const d=buf.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*0.5;
+  const noise=AC.createBufferSource(); noise.buffer=buf; noise.loop=true;
+  const nf=AC.createBiquadFilter(); nf.type='bandpass'; nf.frequency.value=600; nf.Q.value=0.7;
+  const ng=AC.createGain(); ng.gain.value=0.05;
+  noise.connect(nf); nf.connect(ng); ng.connect(bus); noise.start();
+  scheduleGlitch();
+  droneOn=true;
+}
+
+function scheduleGlitch(){
+  if(!AC||!droneOn) return;
+  const t = 2200 + Math.random()*4000;
+  setTimeout(()=>{ if(audioEnabled) glitchBleep(); scheduleGlitch(); }, t);
+}
+
+function glitchBleep(){
+  if(!AC) return;
+  const now=AC.currentTime;
+  const o=AC.createOscillator();
+  o.type = Math.random()<0.5?'square':'sawtooth';
+  const base = 180 + Math.random()*900;
+  o.frequency.setValueAtTime(base, now);
+  o.frequency.exponentialRampToValueAtTime(base*(Math.random()<0.5?0.4:2.3), now+0.08);
+  const g=AC.createGain(); g.gain.value=0.0001;
+  g.gain.setValueAtTime(0.0001, now);
+  g.gain.exponentialRampToValueAtTime(0.09, now+0.004);
+  g.gain.exponentialRampToValueAtTime(0.0001, now+0.09);
+  const bp=AC.createBiquadFilter(); bp.type='highpass'; bp.frequency.value=400;
+  o.connect(bp); bp.connect(g); g.connect(master);
+  o.start(now); o.stop(now+0.12);
+}
+
+let lastBlip=0;
+function blip(){
+  if(!audioEnabled||!AC) return;
+  const now=AC.currentTime;
+  if(now-lastBlip < 0.012) return; lastBlip=now;
+  const o=AC.createOscillator(); o.type='square';
+  o.frequency.value=1400 + Math.random()*500;
+  const g=AC.createGain(); g.gain.value=0.0001;
+  g.gain.setValueAtTime(0.03, now);
+  g.gain.exponentialRampToValueAtTime(0.0001, now+0.02);
+  o.connect(g); g.connect(master);
+  o.start(now); o.stop(now+0.03);
+}
+
+function chip(){
+  if(!audioEnabled||!AC) return;
+  const now=AC.currentTime;
+  const o=AC.createOscillator(); o.type='triangle'; o.frequency.value=660;
+  o.frequency.exponentialRampToValueAtTime(990, now+0.04);
+  const g=AC.createGain(); g.gain.setValueAtTime(0.05, now);
+  g.gain.exponentialRampToValueAtTime(0.0001, now+0.09);
+  o.connect(g); g.connect(master); o.start(now); o.stop(now+0.1);
+}
+
+function chord(){
+  if(!audioEnabled||!AC) return;
+  const now=AC.currentTime;
+  [220,277,330].forEach((f,i)=>{
+    const o=AC.createOscillator(); o.type='sawtooth'; o.frequency.value=f;
+    const g=AC.createGain(); g.gain.setValueAtTime(0.0001,now);
+    g.gain.exponentialRampToValueAtTime(0.05, now+0.02+i*0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, now+0.5);
+    const f2=AC.createBiquadFilter(); f2.type='lowpass'; f2.frequency.value=1200;
+    o.connect(f2); f2.connect(g); g.connect(master);
+    o.start(now); o.stop(now+0.55);
+  });
+}
+
+function loopVU(){
+  if(!analyser){ return; }
+  analyser.getByteFrequencyData(vuData);
+  vuNodes.forEach((n,i)=>{
+    const v = vuData[i*2]||0;
+    n.style.height = (3 + (v/255)*12) + 'px';
+    n.style.background = v>120? 'var(--crimson)' : v>60? 'var(--cyan)':'var(--cyan-dim)';
+  });
+  requestAnimationFrame(loopVU);
+}
+
+const audioBtn=el('audioBtn');
+audioBtn.onclick=()=>{
+  if(!AC){ initAudio(); }
+  audioEnabled=!audioEnabled;
+  if(audioEnabled){
+    if(AC.state==='suspended') AC.resume();
+    rampMaster(0.55,1.2);
+    audioBtn.textContent='♪ AUDIO: ON';
+    audioBtn.classList.add('gold');
+  } else {
+    rampMaster(0.0,0.6);
+    audioBtn.textContent='♪ AUDIO: OFF';
+  }
+};
+
+const starC=el('stars'), sx=starC.getContext('2d');
+let stars=[];
+function sizeStars(){
+  starC.width=starC.clientWidth; starC.height=starC.clientHeight;
+  stars=[];
+  const n=Math.floor(starC.width*starC.height/4000);
+  for(let i=0;i<n;i++) stars.push({
+    x:Math.random()*starC.width, y:Math.random()*starC.height*0.7,
+    z:Math.random(), p:Math.random()*Math.PI*2
+  });
+}
+function drawStars(t){
+  if(!starC.width) sizeStars();
+  sx.clearRect(0,0,starC.width,starC.height);
+  stars.forEach(s=>{
+    const tw=0.4+0.6*Math.abs(Math.sin(t*0.001+s.p));
+    const sz=s.z*1.6+0.3;
+    sx.fillStyle = s.z>0.85? `rgba(255,43,78,${tw*0.8})`
+                 : s.z>0.6 ? `rgba(73,226,255,${tw*0.7})`
+                 : `rgba(199,208,224,${tw*0.5})`;
+    sx.fillRect(s.x, s.y, sz, sz);
+  });
+  requestAnimationFrame(drawStars);
+}
+window.addEventListener('resize', ()=>{ sizeStars(); });
+requestAnimationFrame(drawStars);
+
+el('enterBtn').onclick=()=>{
+  el('titleScreen').classList.add('hidden');
+  if(!AC){ initAudio(); audioEnabled=true; audioBtn.textContent='♪ AUDIO: ON'; audioBtn.classList.add('gold'); }
+  loadScene(0);
+};
+
+window.addEventListener('keydown', e=>{
+  if(el('titleScreen').classList.contains('hidden')===false){
+    if(e.key==='Enter'||e.key===' '){ el('enterBtn').click(); }
+    return;
+  }
+  if(e.key===' '||e.key==='Enter'){ e.preventDefault(); if(!currentLine()?.choices) onAdvance(); }
+  if(e.key>='1'&&e.key<='4'){ loadScene(+e.key-1); resetAdvance(); }
+  if(/^[a-cA-C]$/.test(e.key)){
+    const btns=choicesBox.querySelectorAll('.choice');
+    const idx='abc'.indexOf(e.key.toLowerCase());
+    if(btns[idx]) btns[idx].click();
+  }
+});
+
+loadScene(0, true);
+sizeStars();
+</script>
+</body>
+</html>
