@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet" />
 <style>
-  :root{--bg-void:#050608;--crimson:#ff2b44;--amber:#f59e0b;--ice-cyan:#38bdf8;--line:#13202b;--panel:#0b0f16;--dim:#5b6b78;--ok:#4ade80;}
+  :root{--bg-void:#050608;--crimson:#ff2b44;--amber:#f59e0b;--ice-cyan:#38bdf8;--line:#13202b;--panel:#0b0f16;--dim:#5b6b78;--ok:#4ade80;--purple:#a855f7;}
   *{box-sizing:border-box;margin:0;padding:0}
   body{min-height:100vh;background:radial-gradient(1200px 600px at 50% -10%,#0b1118 0%,var(--bg-void) 60%),var(--bg-void);
     color:#cdd6df;font-family:'JetBrains Mono',ui-monospace,monospace;-webkit-font-smoothing:none;}
@@ -24,6 +24,8 @@
   .btn:hover{border-color:var(--ice-cyan);color:#fff;box-shadow:0 0 14px rgba(56,189,248,.25)}
   .btn.big{font-size:13px;font-weight:700;border-color:var(--amber);color:#ffe4b5}
   .btn.big:hover{box-shadow:0 0 18px rgba(245,158,11,.35)}
+  .btn.purple{border-color:var(--purple);color:#f3e8ff;}
+  .btn.purple:hover{border-color:#c084fc;box-shadow:0 0 16px rgba(168,85,247,.45)}
   .arena{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   @media(max-width:720px){.arena{grid-template-columns:1fr}}
   .card{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:14px}
@@ -53,16 +55,35 @@
   .skill:hover:not(:disabled){border-color:var(--amber);color:#fff;box-shadow:0 0 12px rgba(245,158,11,.25)}
   .skill.talk-btn{border-color:#38bdf8;background:#0d1c2d;color:#d7f7ff}
   .skill.talk-btn:hover:not(:disabled){border-color:#7dd3fc;box-shadow:0 0 12px rgba(56,189,248,.35)}
+  .skill.fuse-btn{border-color:#a855f7;background:#180b26;color:#f3e8ff}
+  .skill.fuse-btn:hover:not(:disabled){border-color:#c084fc;box-shadow:0 0 14px rgba(168,85,247,.4)}
   .skill:disabled{opacity:.35;cursor:not-allowed}
   .skill small{display:block;color:var(--dim);font-size:9px;margin-top:3px}
   .log{height:150px;overflow:auto;border:1px solid var(--line);background:#05080c;border-radius:8px;padding:8px;font-size:11px;line-height:1.7}
-  .log .w{color:var(--amber)}.log .c{color:var(--crimson)}.log .g{color:var(--ok)}.log .i{color:var(--ice-cyan)}
+  .log .w{color:var(--amber)}.log .c{color:var(--crimson)}.log .g{color:var(--ok)}.log .i{color:var(--ice-cyan)}.log .p{color:var(--purple)}
   .result{position:fixed;inset:0;z-index:60;background:rgba(2,4,8,.9);display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px}
   .result.show{display:flex}.result h2{font-size:34px;letter-spacing:6px}
   .result.win h2{color:var(--ok);text-shadow:0 0 20px rgba(74,222,128,.5)}
   .result.lose h2{color:var(--crimson);text-shadow:0 0 20px rgba(255,43,68,.5)}
+  
+  /* Roster & Fusion Modal */
+  .roster-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px;border:1px solid var(--line);background:#070a0f;padding:8px 12px;border-radius:8px;}
+  .roster-chip{display:inline-flex;align-items:center;gap:6px;background:#0f1722;border:1px solid #1e2d3d;padding:4px 8px;border-radius:4px;font-size:10px;color:#cbd5e1}
+  .roster-chip b{color:#38bdf8}
+  .fusion-modal{position:fixed;inset:0;z-index:70;background:rgba(4,6,10,.92);display:none;align-items:center;justify-content:center;padding:16px;}
+  .fusion-modal.open{display:flex}
+  .fusion-panel{background:#090d14;border:2px solid var(--purple);border-radius:12px;padding:18px;max-width:560px;width:100%;box-shadow:0 0 30px rgba(168,85,247,.3);display:flex;flex-direction:column;gap:12px;}
+  .f-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #231938;padding-bottom:8px}
+  .f-header h3{color:var(--purple);font-size:14px;letter-spacing:2px}
+  .f-selectors{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .f-selectors select{background:#0d121c;border:1px solid var(--line);color:#e2e8f0;font-family:inherit;padding:8px;border-radius:6px;font-size:11px;}
+  .f-preview{background:#05070c;border:1px dashed #3a225c;border-radius:8px;padding:12px;text-align:center;}
+  .f-preview h4{color:#f3e8ff;font-size:13px;letter-spacing:1px;margin-bottom:4px;}
+  .f-preview p{font-size:10px;color:var(--dim);line-height:1.5;}
+  .f-actions{display:flex;gap:8px;justify-content:flex-end;}
 </style>
 <script src="negotiate.js"></script>
+<script src="fusion.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -72,8 +93,15 @@
       <div class="tag" id="encTag">ENCOUNTER · SEED —</div>
     </div>
     <div class="spacer"></div>
+    <button class="btn purple" id="openFusionBtn" onclick="openFusionModal()">⚡ FUSION CHAMBER</button>
     <a class="btn big" href="dungeon.html" id="dungeonLink">🏰 ENTER DUNGEON FLOOR</a>
   </header>
+
+  <div class="roster-bar" id="rosterBar">
+    <span class="tag" style="color:var(--purple)">PACT ROSTER [2/8]:</span>
+    <div id="rosterChips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    <span class="tag" style="margin-left:auto" id="fpsCounter">FPS: 60</span>
+  </div>
 
   <div class="turns">
     <span class="lbl">TACTICAL CYCLES</span>
@@ -101,7 +129,7 @@
   </div>
 
   <div class="card">
-    <div class="tag" style="margin-bottom:8px">ACTIONS — exploit resistance vulnerabilities to gain extra cycles or negotiate</div>
+    <div class="tag" style="margin-bottom:8px">ACTIONS — exploit resistance vulnerabilities to gain extra cycles, negotiate, or fuse demons</div>
     <div class="skills" id="skills"></div>
   </div>
 
@@ -115,22 +143,82 @@
   </div>
 </div>
 
+<!-- FUSION CHAMBER MODAL -->
+<div class="fusion-modal" id="fusionModal">
+  <div class="fusion-panel">
+    <div class="f-header">
+      <h3>⚡ DEMON FUSION CHAMBER</h3>
+      <button class="btn" style="padding:4px 8px;font-size:10px" onclick="closeFusionModal()">✕ ESC</button>
+    </div>
+    <div class="tag">SYNTHESIZE TWO COMPLIANT DEMON PROCESSES INTO A SUPERIOR TACTICAL FRAME</div>
+    <div class="f-selectors">
+      <div>
+        <div class="tag" style="margin-bottom:4px">PRIME VESSEL (A)</div>
+        <select id="fuseSelectA" onchange="updateFusionPreview()"></select>
+      </div>
+      <div>
+        <div class="tag" style="margin-bottom:4px">CATALYST VESSEL (B)</div>
+        <select id="fuseSelectB" onchange="updateFusionPreview()"></select>
+      </div>
+    </div>
+    <div class="f-preview" id="fusionPreviewBox">
+      <h4 id="fuseResultName">— SELECT DEMONS —</h4>
+      <p id="fuseResultStats">Awaiting fusion synthesis calculation...</p>
+      <div id="fuseResultAff" class="aff"></div>
+    </div>
+    <div class="f-actions">
+      <button class="btn" onclick="closeFusionModal()">CANCEL</button>
+      <button class="btn purple big" id="execFuseBtn" onclick="executeFusion()">⚡ INITIATE FUSION</button>
+    </div>
+  </div>
+</div>
+
 <script>
 "use strict";
+/* ===== FPS telemetry counter ===== */
+let lastFrameTime=performance.now(),frameCount=0,fpsVal=60;
+function fpsLoop(){
+  frameCount++;
+  const now=performance.now();
+  if(now-lastFrameTime>=1000){
+    fpsVal=Math.round((frameCount*1000)/(now-lastFrameTime));
+    document.getElementById('fpsCounter').textContent='FPS: '+fpsVal;
+    frameCount=0;lastFrameTime=now;
+  }
+  requestAnimationFrame(fpsLoop);
+}
+requestAnimationFrame(fpsLoop);
+
 /* ===== shared roster w/ affinities (ids match dungeon.html) ===== */
 const ELEMENTS=['kinetic','thermal','cryo','volt','void'];
 const ENEMY_DB={
- sentinel:{name:'DAEMON SENTINEL',col:'#ff2b44',col2:'#7a0f1c',glow:'#ff6b7e',horns:true,
-   hp:120,sp:40,atk:16,aff:{kinetic:'res',cryo:'weak',void:'nul'},skills:['kinetic','kinetic','void']},
- pyroclocker:{name:'PYRO CLOCKER',col:'#f59e0b',col2:'#7a3d00',glow:'#ffd27a',horns:false,
-   hp:90,sp:60,atk:14,aff:{thermal:'drain',cryo:'weak',volt:'res'},skills:['thermal','thermal','kinetic']},
- cryodrifter:{name:'CRYO DRIFTER',col:'#38bdf8',col2:'#0c4a6e',glow:'#bae6fd',horns:true,
-   hp:110,sp:50,atk:15,aff:{cryo:'drain',thermal:'weak',kinetic:'res'},skills:['cryo','cryo','kinetic']},
- sparkharvester:{name:'SPARK HARVESTER',col:'#fde047',col2:'#854d0e',glow:'#fff7c2',horns:false,
-   hp:70,sp:80,atk:13,aff:{volt:'drain',void:'weak',cryo:'res'},skills:['volt','volt','volt']},
- coreinquisitor:{name:'CORE INQUISITOR',col:'#a855f7',col2:'#3b0764',glow:'#e9d5ff',horns:true,
-   hp:140,sp:70,atk:18,aff:{void:'nul',volt:'weak',kinetic:'res',thermal:'res',cryo:'res'},skills:['void','void','kinetic']},
+ sentinel:{id:'sentinel',name:'DAEMON SENTINEL',col:'#ff2b44',col2:'#7a0f1c',glow:'#ff6b7e',horns:true,
+   hp:120,sp:40,atk:16,aff:{kinetic:'res',cryo:'weak',void:'nul'},skills:['kinetic','kinetic','void'],tier:1,lore:'Compiled warden.'},
+ pyroclocker:{id:'pyroclocker',name:'PYRO CLOCKER',col:'#f59e0b',col2:'#7a3d00',glow:'#ffd27a',horns:false,
+   hp:90,sp:60,atk:14,aff:{thermal:'drain',cryo:'weak',volt:'res'},skills:['thermal','thermal','kinetic'],tier:1,lore:'Overclocked fire.'},
+ cryodrifter:{id:'cryodrifter',name:'CRYO DRIFTER',col:'#38bdf8',col2:'#0c4a6e',glow:'#bae6fd',horns:true,
+   hp:110,sp:50,atk:15,aff:{cryo:'drain',thermal:'weak',kinetic:'res'},skills:['cryo','cryo','kinetic'],tier:1,lore:'Heat-sink drift.'},
+ sparkharvester:{id:'sparkharvester',name:'SPARK HARVESTER',col:'#fde047',col2:'#854d0e',glow:'#fff7c2',horns:false,
+   hp:70,sp:80,atk:13,aff:{volt:'drain',void:'weak',cryo:'res'},skills:['volt','volt','volt'],tier:1,lore:'Voltage reaper.'},
+ coreinquisitor:{id:'coreinquisitor',name:'CORE INQUISITOR',col:'#a855f7',col2:'#3b0764',glow:'#e9d5ff',horns:true,
+   hp:140,sp:70,atk:18,aff:{void:'nul',volt:'weak',kinetic:'res',thermal:'res',cryo:'res'},skills:['void','void','kinetic'],tier:2,lore:'Soul auditor.'},
 };
+
+/* ===== Player pact roster (default carries 2 recruited spirits) ===== */
+let PACT_ROSTER = [
+  JSON.parse(JSON.stringify(ENEMY_DB.pyroclocker)),
+  JSON.parse(JSON.stringify(ENEMY_DB.cryodrifter))
+];
+
+function updateRosterUI(){
+  const bar = document.getElementById('rosterChips');
+  bar.innerHTML = '';
+  PACT_ROSTER.forEach((d, idx)=>{
+    bar.insertAdjacentHTML('beforeend', '<div class="roster-chip"><b>T'+(d.tier||1)+'</b> '+d.name+'</div>');
+  });
+  document.getElementById('rosterBar').querySelector('.tag').textContent = 'PACT ROSTER ['+PACT_ROSTER.length+'/8]:';
+}
+
 const HERO={name:'CAIRN-FRAME',hp:110,sp:70,atk:17,aff:{void:'weak'}};
 const SKILLS=[
  {id:'cleave', el:'kinetic', name:'CLEAVE',   cost:0, pow:1.0, desc:'KINETIC'},
@@ -140,11 +228,13 @@ const SKILLS=[
  {id:'void',   el:'void',    name:'VOID NULL',cost:14,pow:1.5, desc:'ENTROPY'},
  {id:'patch',  el:'heal',    name:'PATCH',    cost:12,pow:0,   desc:'REPAIR'},
  {id:'talk',   el:'talk',    name:'TALK',     cost:0, pow:0,   desc:'NEGOTIATE', isTalk:true},
+ {id:'fuse',   el:'fuse',    name:'FUSE',     cost:0, pow:0,   desc:'CHAMBER', isFuse:true},
 ];
+
 /* ===== sprite gen (matches dungeon aesthetic) ===== */
 function px(g,x,y,c){g.fillStyle=c;g.fillRect(x,y,1,1);}
 function drawCreature(cv,e){const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,16,16);
- const B=e.col,D=e.col2,G=e.glow;g.fillStyle='rgba(0,0,0,.45)';g.fillRect(4,14,8,2);
+ const B=e.col||'#ec4899',D=e.col2||'#831843',G=e.glow||'#f472b6';g.fillStyle='rgba(0,0,0,.45)';g.fillRect(4,14,8,2);
  const body=["....DDDD....","...DBBBBD...","..DBBBBBBD..","..DBBBBBBD..",".DBBBBBBBBD.",".DBBBBBBBBD.",".DBBBBBBBBD.","..DBBBBBBD..","..DBBBBBBD..","...DB..BD..."];
  const m={B,D};for(let r=0;r<body.length;r++){const row=body[r];for(let x=0;x<row.length;x++){const ch=row[x];if(ch==='.')continue;px(g,x+2,r+4,m[ch]);}}
  if(e.horns){g.fillStyle=D;px(g,4,3,D);px(g,3,2,D);px(g,11,3,D);px(g,12,2,D);px(g,4,4,D);px(g,11,4,D);}
@@ -155,6 +245,7 @@ function drawHero(cv){const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
  g.fillStyle='#18323f';g.fillRect(3,6,10,7);g.fillStyle='#0b1620';g.fillRect(5,2,6,4);
  g.fillStyle='#071019';g.fillRect(5,6,6,3);g.fillStyle='#38bdf8';g.fillRect(6,7,4,1);
  g.fillStyle='#bae6fd';px(g,6,7,'#bae6fd');g.fillStyle='#ff2b44';px(g,7,10,'#ff2b44');px(g,8,10,'#ff2b44');}
+
 /* ===== read params ===== */
 const params=new URLSearchParams(location.search);
 const seed=params.get('seed')||'arabella';
@@ -171,12 +262,15 @@ const H=JSON.parse(JSON.stringify(HERO));
 E.maxhp=E.hp;H.maxhp=H.hp;H.maxsp=H.sp;
 document.getElementById('encTag').textContent='ENCOUNTER · SEED '+seed.toUpperCase();
 document.getElementById('dungeonLink').href='dungeon.html?seed='+encodeURIComponent(seed);
+
 /* ===== setup UI ===== */
 drawCreature(document.getElementById('enemySprite'),E);
 document.getElementById('enemySprite').style.setProperty('--glow',E.glow);
 document.getElementById('enemyName').textContent=E.name;
 drawHero(document.getElementById('heroSprite'));
 document.getElementById('heroName').textContent=H.name;
+updateRosterUI();
+
 const affEl=document.getElementById('enemyAff');
 const revealed={};
 function renderAff(){affEl.innerHTML='';for(const el of ELEMENTS){const a=E.aff[el];if(!a||!revealed[el])continue;
@@ -184,9 +278,11 @@ function renderAff(){affEl.innerHTML='';for(const el of ELEMENTS){const a=E.aff[
  const lbl=a==='weak'?'WEAK':a==='res'?'RESIST':a==='nul'?'NULL':'DRAIN';
  affEl.insertAdjacentHTML('beforeend','<span class="'+cls+'">'+el.toUpperCase()+':'+lbl+'</span>');}}
 const skillsEl=document.getElementById('skills');
-SKILLS.forEach(s=>{const b=document.createElement('button');b.className='skill'+(s.isTalk?' talk-btn':'');b.dataset.id=s.id;
+SKILLS.forEach(s=>{const b=document.createElement('button');
+ b.className='skill'+(s.isTalk?' talk-btn':'')+(s.isFuse?' fuse-btn':'');b.dataset.id=s.id;
  b.innerHTML=s.name+'<small>'+s.desc+(s.cost?' · '+s.cost+'FLUX':'')+'</small>';
  b.addEventListener('click',()=>heroAction(s));skillsEl.appendChild(b);});
+
 /* ===== tactical cycle engine ===== */
 let turn='hero',icons=[],busy=false;
 const logEl=document.getElementById('log');
@@ -203,7 +299,7 @@ function spendTurn(result){
  else if(result==='nul'){icons=icons.slice(0,-2);}
  else if(result==='drain'){icons=[];}
  renderIcons();}
-function affResult(el,aff){if(el==='heal'||el==='talk')return'normal';if(!aff||!aff[el])return'normal';return aff[el];}
+function affResult(el,aff){if(el==='heal'||el==='talk'||el==='fuse')return'normal';if(!aff||!aff[el])return'normal';return aff[el];}
 function updateBars(){document.getElementById('heroHp').style.width=Math.max(0,H.hp/H.maxhp*100)+'%';
  document.getElementById('heroSp').style.width=Math.max(0,H.sp/H.maxsp*100)+'%';
  document.getElementById('enemyHp').style.width=Math.max(0,E.hp/E.maxhp*100)+'%';
@@ -214,8 +310,11 @@ function setSkills(on){document.querySelectorAll('.skill').forEach(b=>{const s=S
  b.disabled=!on||busy||(s.cost>H.sp);});}
 function dmg(base,pow,result){let mult=1;if(result==='weak')mult=1.6;if(result==='crit')mult=1.8;if(result==='res')mult=.5;
  const v=base*pow*mult*(0.9+Math.random()*0.2);return Math.round(v);}
+
 /* ===== hero turn ===== */
-function heroAction(s){if(busy||turn!=='hero')return;if(s.cost>H.sp)return;busy=true;setSkills(false);
+function heroAction(s){if(busy||turn!=='hero')return;if(s.cost>H.sp)return;
+ if(s.isFuse){openFusionModal();return;}
+ busy=true;setSkills(false);
  H.sp-=s.cost;
  if(s.isTalk){
    log(H.name+' initiates <b>NEGOTIATION LINK</b> with '+E.name+'...','i');
@@ -224,6 +323,8 @@ function heroAction(s){if(busy||turn!=='hero')return;if(s.cost>H.sp)return;busy=
        busy=false;
        if(result.outcome==='recruit'){
          log('PACT FORMED! '+result.message,'g');
+         PACT_ROSTER.push(JSON.parse(JSON.stringify(E)));
+         updateRosterUI();
          finish(true, 'RECRUITED');
        }else if(result.outcome==='flee'){
          log('TRUCE CONCLUDED: '+result.message,'w');
@@ -257,6 +358,7 @@ function heroAction(s){if(busy||turn!=='hero')return;if(s.cost>H.sp)return;busy=
 function endSub(){setTimeout(()=>{busy=false;
  if(E.hp<=0)return finish(true);
  if(icons.length<=0){startEnemyTurn();}else setSkills(true);},550);}
+
 /* ===== enemy turn ===== */
 function startEnemyTurn(){turn='enemy';icons=makeIcons(2);renderIcons();setSkills(false);log('— '+E.name+' PHASE —','c');setTimeout(enemyAct,650);}
 function enemyAct(){if(icons.length<=0)return startHeroTurn();
@@ -271,15 +373,115 @@ function enemyAct(){if(icons.length<=0)return startHeroTurn();
  spendTurn(rtag);updateBars();
  setTimeout(()=>{if(H.hp<=0)return finish(false);if(icons.length>0)enemyAct();else startHeroTurn();},650);}
 function startHeroTurn(){turn='hero';icons=makeIcons(4);renderIcons();setSkills(true);log('— YOUR CYCLE —','g');}
+
 /* ===== end ===== */
 function finish(win, title){const r=document.getElementById('result');r.classList.add('show',win?'win':'lose');
  document.getElementById('resultTxt').textContent=title||(win?'VICTORY':'PURGED');
  log(win?'<b>'+E.name+' process decommissioned.</b>':'<b>Frame halted.</b>',win?'g':'c');}
+
+/* ===== FUSION CHAMBER LOGIC ===== */
+function openFusionModal(){
+  const modal = document.getElementById('fusionModal');
+  const selA = document.getElementById('fuseSelectA');
+  const selB = document.getElementById('fuseSelectB');
+  selA.innerHTML = ''; selB.innerHTML = '';
+  
+  if(PACT_ROSTER.length < 2){
+    selA.innerHTML = '<option value="">(Need >= 2 demons in roster)</option>';
+    selB.innerHTML = '<option value="">(Need >= 2 demons in roster)</option>';
+    document.getElementById('execFuseBtn').disabled = true;
+  } else {
+    PACT_ROSTER.forEach((d, i)=>{
+      selA.insertAdjacentHTML('beforeend', '<option value="'+i+'">'+d.name+' (T'+(d.tier||1)+')</option>');
+      selB.insertAdjacentHTML('beforeend', '<option value="'+i+'" '+(i===1?'selected':'')+'>'+d.name+' (T'+(d.tier||1)+')</option>');
+    });
+    document.getElementById('execFuseBtn').disabled = false;
+  }
+  updateFusionPreview();
+  modal.classList.add('open');
+}
+
+function closeFusionModal(){
+  document.getElementById('fusionModal').classList.remove('open');
+}
+
+function updateFusionPreview(){
+  const idxA = parseInt(document.getElementById('fuseSelectA').value, 10);
+  const idxB = parseInt(document.getElementById('fuseSelectB').value, 10);
+  const nameEl = document.getElementById('fuseResultName');
+  const statsEl = document.getElementById('fuseResultStats');
+  const affBox = document.getElementById('fuseResultAff');
+  affBox.innerHTML = '';
+
+  if(isNaN(idxA) || isNaN(idxB) || !PACT_ROSTER[idxA] || !PACT_ROSTER[idxB]){
+    nameEl.textContent = '— NO VALID VESSELS —';
+    statsEl.textContent = 'Recruit demons via negotiation or select distinct candidates.';
+    return;
+  }
+  
+  const dA = PACT_ROSTER[idxA];
+  const dB = PACT_ROSTER[idxB];
+  
+  if(window.DemonFusion && window.DemonFusion.preview){
+    const result = window.DemonFusion.preview(dA, dB);
+    if(result){
+      nameEl.innerHTML = '<b style="color:'+(result.col||'#c084fc')+'">'+result.name+' [TIER '+(result.tier||2)+']</b>';
+      statsEl.innerHTML = 'HP: <b>'+result.hp+'</b> · SP: <b>'+result.sp+'</b> · ATK: <b>'+result.atk+'</b><br><small style="color:var(--dim)">'+result.lore+'</small>';
+      if(result.aff){
+        for(const el of ELEMENTS){
+          const a = result.aff[el];
+          if(a && a !== 'normal'){
+            const cls = a==='weak'?'weak':a==='res'?'res':a==='nul'?'nul':'rpl';
+            affBox.insertAdjacentHTML('beforeend', '<span class="'+cls+'">'+el.toUpperCase()+':'+a.toUpperCase()+'</span>');
+          }
+        }
+      }
+      return;
+    }
+  }
+  nameEl.textContent = 'FUSION PREVIEW OFFLINE';
+  statsEl.textContent = 'DemonFusion module not loaded.';
+}
+
+function executeFusion(){
+  const idxA = parseInt(document.getElementById('fuseSelectA').value, 10);
+  const idxB = parseInt(document.getElementById('fuseSelectB').value, 10);
+  if(isNaN(idxA) || isNaN(idxB) || idxA === idxB){
+    alert('Select two different demon processes from your roster.');
+    return;
+  }
+  
+  const dA = PACT_ROSTER[idxA];
+  const dB = PACT_ROSTER[idxB];
+  const fused = window.DemonFusion.fuse(dA, dB);
+  
+  if(!fused){
+    alert('Fusion synthesis failed.');
+    return;
+  }
+
+  // Remove parents in descending index order
+  const [first, second] = idxA > idxB ? [idxA, idxB] : [idxB, idxA];
+  PACT_ROSTER.splice(first, 1);
+  PACT_ROSTER.splice(second, 1);
+  PACT_ROSTER.unshift(fused);
+
+  updateRosterUI();
+  closeFusionModal();
+  log('⚡ <b>DEMON FUSION COMPLETE!</b> Synthesized: <span class="p">'+fused.name+' [TIER '+fused.tier+']</span>','p');
+  log('Derived ATK: '+fused.atk+' · HP: '+fused.hp+' · Inherited: '+fused.inheritedSkill.toUpperCase(),'p');
+  
+  // Buff hero flux on successful fusion
+  H.sp = Math.min(H.maxsp, H.sp + 25);
+  updateBars();
+}
+
 /* ===== boot ===== */
 for(const el of ELEMENTS)if(E.aff[el]==='weak'){/* hidden until discovered */}
 renderAff();updateBars();startHeroTurn();
 log('Hostile process <b>'+E.name+'</b> materialized from seed <b>'+seed+'</b>.','c');
 log('Probe resistance profiles — strike VULNERABILITIES for bonus tactical cycles.','w');
+log('Fusion chamber online. Combine recruited demons via <b>FUSE</b> action.','p');
 </script>
 </body>
 </html>
