@@ -7,284 +7,410 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet" />
 <style>
-  :root{
-    --bg-void:#050608; --crimson:#ff2b44; --amber:#f59e0b; --ice-cyan:#38bdf8;
-    --ink:#0a0d12; --panel:#0b0f16; --line:#13202b; --dim:#5b6b78; --ok:#4ade80;
+  :root {
+    --bg-void: #050608;
+    --bg-panel: #0a0c10;
+    --bg-subtle: #10141c;
+    --border-dim: #1f2937;
+    --border-hi: #374151;
+    --text-primary: #e5e7eb;
+    --text-dim: #9ca3af;
+    --text-muted: #4b5563;
+    --accent-crimson: #ff2a4b;
+    --accent-amber: #f59e0b;
+    --accent-cyan: #06b6d4;
+    --accent-emerald: #10b981;
+    --accent-violet: #8b5cf6;
+    --cell-size: 24px;
   }
-  *{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%}
-  body{
-    background:radial-gradient(1200px 600px at 50% -10%, #0b1118 0%, var(--bg-void) 60%), var(--bg-void);
-    color:#cdd6df; font-family:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
-    overflow:hidden; -webkit-font-smoothing:none;
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background-color: var(--bg-void);
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 12px;
+    user-select: none;
+    -webkit-user-select: none;
   }
-  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;
-    background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,0,0,.28) 3px,rgba(0,0,0,0) 4px);
-    mix-blend-mode:multiply;opacity:.55;}
-  body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:51;
-    background:radial-gradient(130% 130% at 50% 50%,transparent 55%,rgba(0,0,0,.65) 100%);}
-  .wrap{height:100%;display:grid;grid-template-rows:auto 1fr auto;gap:10px;padding:10px;max-width:1100px;margin:0 auto}
-  header.hud{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:1px solid var(--line);
-    background:linear-gradient(180deg,#0a0e14,#070a0f);padding:8px 12px;border-radius:8px;
-    box-shadow:0 0 0 1px #000 inset,0 0 30px rgba(255,43,68,.04);}
-  .title{font-weight:800;letter-spacing:2px;font-size:14px;color:#e7edf3}
-  .title b{color:var(--crimson);text-shadow:0 0 10px rgba(255,43,68,.5)}
-  .tag{font-size:10px;color:var(--dim);letter-spacing:1px}
-  .spacer{flex:1}
-  .btn{font-family:inherit;cursor:pointer;color:#dbe4ec;background:#0c1017;border:1px solid var(--line);
-    padding:7px 10px;border-radius:6px;font-size:11px;letter-spacing:1px;transition:.12s;
-    text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
-  .btn:hover{border-color:var(--ice-cyan);color:#fff;box-shadow:0 0 14px rgba(56,189,248,.25)}
-  .btn.crimson:hover{border-color:var(--crimson);box-shadow:0 0 14px rgba(255,43,68,.3)}
-  .seedbox{display:flex;align-items:center;gap:6px}
-  .seedbox input{font-family:inherit;background:#05080c;border:1px solid var(--line);color:var(--amber);
-    padding:6px 8px;border-radius:6px;width:120px;font-size:11px;letter-spacing:1px;}
-  .seedbox input:focus{outline:none;border-color:var(--amber)}
-  main{display:grid;grid-template-columns:1fr 240px;gap:10px;min-height:0}
-  @media(max-width:820px){main{grid-template-columns:1fr}.side{order:-1}}
-  .stage{position:relative;border:1px solid var(--line);border-radius:10px;overflow:hidden;
-    background:#02040a;display:flex;align-items:center;justify-content:center;min-height:0;
-    box-shadow:0 0 40px rgba(0,0,0,.6) inset;}
-  #dungeon-canvas{image-rendering:pixelated;image-rendering:crisp-edges;display:block;width:100%;height:100%}
-  #fx{position:absolute;inset:0;pointer-events:none;z-index:20;opacity:0}
-  #fx.flash{animation:flash .55s ease-out forwards}
-  @keyframes flash{0%{opacity:0;background:#fff}8%{opacity:1;background:#fff}
-    22%{opacity:.9;background:var(--crimson)}100%{opacity:1;background:#000}}
-  .enc-banner{position:absolute;z-index:21;left:0;right:0;top:50%;transform:translateY(-50%);
-    text-align:center;color:#fff;font-weight:800;letter-spacing:4px;font-size:22px;
-    text-shadow:0 0 16px var(--crimson);opacity:0;transition:opacity .2s;}
-  .enc-banner.show{opacity:1}
-  .enc-banner small{display:block;font-size:11px;letter-spacing:3px;color:var(--amber);margin-top:8px}
-  .side{display:flex;flex-direction:column;gap:10px;min-height:0}
-  .card{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:10px}
-  .card h3{font-size:10px;letter-spacing:2px;color:var(--ice-cyan);margin-bottom:8px;font-weight:700}
-  #radar{width:100%;height:150px;image-rendering:pixelated;background:#02040a;border:1px solid #0c1620;border-radius:6px}
-  .legend{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;font-size:9.5px;color:#9fb0bd}
-  .legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle}
-  .stat{display:flex;justify-content:space-between;font-size:11px;padding:2px 0;color:#9fb0bd}
-  .stat b{color:#e7edf3}
-  footer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
-    border:1px solid var(--line);background:#070a0f;border-radius:8px;padding:6px 10px;font-size:10px;color:var(--dim)}
-  .dpad{position:absolute;z-index:22;right:14px;bottom:14px;display:grid;grid-template-columns:repeat(3,46px);
-    grid-template-rows:repeat(3,46px);gap:4px;opacity:.85}
-  .dpad button{font-family:inherit;font-size:16px;border:1px solid var(--line);background:rgba(10,14,20,.8);
-    color:#cdd6df;border-radius:8px;cursor:pointer;touch-action:none;}
-  .dpad button:active{background:var(--ice-cyan);color:#021018}
-  .dpad .empty{visibility:hidden}
-  @media(min-width:821px){.dpad{opacity:.35}.dpad:hover{opacity:.9}}
+  header {
+    width: 100%;
+    max-width: 960px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-dim);
+    margin-bottom: 12px;
+  }
+  .title-group { display: flex; align-items: center; gap: 12px; }
+  .title-main { font-weight: 800; font-size: 14px; letter-spacing: 0.1em; color: var(--accent-crimson); }
+  .floor-badge { font-size: 11px; padding: 2px 6px; background: var(--bg-subtle); border: 1px solid var(--border-dim); color: var(--accent-amber); font-weight: 600; }
+  .nav-group { display: flex; gap: 8px; align-items: center; }
+  .btn {
+    background: var(--bg-subtle);
+    border: 1px solid var(--border-hi);
+    color: var(--text-primary);
+    padding: 4px 10px;
+    font-family: inherit;
+    font-size: 11px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.15s ease;
+  }
+  .btn:hover { background: var(--border-hi); color: #fff; }
+  .btn-boss { border-color: var(--accent-crimson); color: var(--accent-crimson); font-weight: 700; }
+  .btn-boss:hover { background: var(--accent-crimson); color: #fff; }
+  .layout-container {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 12px;
+    width: 100%;
+    max-width: 960px;
+  }
+  @media (max-width: 768px) {
+    .layout-container { grid-template-columns: 1fr; }
+  }
+  .viewport-panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-dim);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  canvas#dungeonCanvas {
+    background: #020305;
+    border: 1px solid var(--border-dim);
+    display: block;
+    image-rendering: pixelated;
+  }
+  .sidebar { display: flex; flex-direction: column; gap: 12px; }
+  .card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-dim);
+    padding: 12px;
+  }
+  .card-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border-dim);
+    padding-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; }
+  .stat-box { background: var(--bg-subtle); padding: 6px; border: 1px solid var(--border-dim); }
+  .stat-lbl { font-size: 9px; color: var(--text-muted); }
+  .stat-val { font-size: 13px; font-weight: 700; color: var(--accent-cyan); }
+  .d-pad {
+    display: grid;
+    grid-template-columns: repeat(3, 44px);
+    grid-template-rows: repeat(3, 44px);
+    gap: 4px;
+    justify-content: center;
+    margin-top: 8px;
+  }
+  .d-pad button {
+    background: var(--bg-subtle);
+    border: 1px solid var(--border-hi);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .d-pad button:hover { background: var(--border-hi); }
+  .boss-alert {
+    padding: 8px;
+    background: rgba(255, 42, 75, 0.1);
+    border: 1px solid var(--accent-crimson);
+    color: var(--accent-crimson);
+    font-size: 11px;
+    line-height: 1.4;
+    display: none;
+    margin-top: 8px;
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header class="hud">
-    <div>
-      <div class="title"><b>SILICON</b> PURGATORY <span class="tag">// DUNGEON FLOOR</span></div>
-      <div class="tag" id="floorTag">FLOOR 01 · SEED —</div>
+
+<header>
+  <div class="title-group">
+    <span class="title-main">SILICON PURGATORY // DUNGEON FLOOR</span>
+    <span id="floorBadge" class="floor-badge">SECTOR 01 · SEED ARABELLA</span>
+  </div>
+  <div class="nav-group">
+    <input type="text" id="seedInput" value="arabella" style="background:var(--bg-subtle);border:1px solid var(--border-dim);color:var(--text-primary);padding:3px 6px;font-family:inherit;font-size:11px;width:75px;" />
+    <button id="regenBtn" class="btn">⟳ REGEN</button>
+    <button id="bossSanctumBtn" class="btn btn-boss">⚠️ BOSS SANCTUM</button>
+    <a href="index.html" class="btn">⚔️ CYCLE ARENA</a>
+  </div>
+</header>
+
+<div class="layout-container">
+  <div class="viewport-panel">
+    <canvas id="dungeonCanvas" width="576" height="576"></canvas>
+    <div id="bossAlert" class="boss-alert">
+      <strong>⚠️ ANOMALY DETECTED: NULL COLOSSUS ACTIVE</strong><br/>
+      Multi-action Press-Turn Archon located in Sanctum Center. Engage with caution!
     </div>
-    <div class="spacer"></div>
-    <div class="seedbox">
-      <span class="tag">SEED</span>
-      <input id="seedInput" spellcheck="false" placeholder="arabella" />
-      <button class="btn" id="regen">⟳ REGEN</button>
-    </div>
-    <a class="btn crimson" href="index.html">⚔️ CYCLE ARENA</a>
-  </header>
-  <main>
-    <div class="stage">
-      <canvas id="dungeon-canvas" width="960" height="600"></canvas>
-      <div id="fx"></div>
-      <div class="enc-banner" id="encBanner">! ANOMALY DETECTED !<small id="encName">DAEMON SENTINEL</small></div>
-      <div class="dpad">
-        <div class="empty"></div><button data-dir="up">▲</button><div class="empty"></div>
-        <button data-dir="left">◄</button><div class="empty"></div><button data-dir="right">►</button>
-        <div class="empty"></div><button data-dir="down">▼</button><div class="empty"></div>
+  </div>
+
+  <div class="sidebar">
+    <div class="card">
+      <div class="card-title">TELEMETRY <span id="fpsCounter">60 FPS</span></div>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="stat-lbl">POSITION</div><div id="posVal" class="stat-val">4,14</div></div>
+        <div class="stat-box"><div class="stat-lbl">SECTOR</div><div id="sectorVal" class="stat-val">01 / 06</div></div>
+        <div class="stat-box"><div class="stat-lbl">HOSTILES</div><div id="hostileVal" class="stat-val">4</div></div>
+        <div class="stat-box"><div class="stat-lbl">BOSS INTEGRITY</div><div id="bossHpVal" class="stat-val">360 / 360</div></div>
       </div>
     </div>
-    <div class="side">
-      <div class="card"><h3>FLOOR RADAR</h3><canvas id="radar" width="220" height="150"></canvas></div>
-      <div class="card"><h3>TELEMETRY</h3>
-        <div class="stat"><span>POSITION</span><b id="posStat">0,0</b></div>
-        <div class="stat"><span>SECTORS</span><b id="roomStat">0 / 0</b></div>
-        <div class="stat"><span>HOSTILES</span><b id="enemyStat">0</b></div>
-        <div class="stat"><span>MAPPED</span><b id="clearStat">0%</b></div>
+
+    <div class="card">
+      <div class="card-title">TACTICAL PROPULSION</div>
+      <div class="d-pad">
+        <div></div><button id="btnUp">▲</button><div></div>
+        <button id="btnLeft">◄</button><div></div><button id="btnRight">►</button>
+        <div></div><button id="btnDown">▼</button><div></div>
       </div>
-      <div class="card"><h3>BESTIARY</h3><div class="legend" id="legend"></div></div>
     </div>
-  </main>
-  <footer>
-    <span>MOVE: <b style="color:#cdd6df">WASD / ARROWS / D-PAD</b> &nbsp;·&nbsp; Touch a hostile process to engage</span>
-    <span id="fps">-- FPS</span>
-  </footer>
+
+    <div class="card">
+      <div class="card-title">BESTIARY & RESISTANCES</div>
+      <div style="font-size:11px;color:var(--text-dim);line-height:1.6;" id="bestiaryList">
+        • DAEMON SENTINEL (Weak: Cold)<br/>
+        • PYRO CLOCKER (Weak: Cold)<br/>
+        • CRYO DRIFTER (Weak: Heat)<br/>
+        • NULL COLOSSUS [BOSS] (Weak: Heat)
+      </div>
+    </div>
+  </div>
 </div>
+
+<!-- Scripts -->
+<script src="boss.js"></script>
 <script>
-"use strict";
-/* ===== seeded RNG ===== */
-function hashSeed(s){let h=1779033703^s.length;for(let i=0;i<s.length;i++){h=Math.imul(h^s.charCodeAt(i),3432918353);h=(h<<13)|(h>>>19);}return(h^(h>>>16))>>>0;}
-function mulberry32(a){return function(){a|=0;a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
-/* ===== enemy roster (Sovereign taxonomy) ===== */
-const ENEMIES=[
- {id:'sentinel',       name:'DAEMON SENTINEL', col:'#ff2b44',col2:'#7a0f1c',glow:'#ff6b7e',horns:true},
- {id:'pyroclocker',   name:'PYRO CLOCKER',    col:'#f59e0b',col2:'#7a3d00',glow:'#ffd27a',horns:false},
- {id:'cryodrifter',   name:'CRYO DRIFTER',    col:'#38bdf8',col2:'#0c4a6e',glow:'#bae6fd',horns:true},
- {id:'sparkharvester',name:'SPARK HARVESTER', col:'#fde047',col2:'#854d0e',glow:'#fff7c2',horns:false},
- {id:'coreinquisitor',name:'CORE INQUISITOR', col:'#a855f7',col2:'#3b0764',glow:'#e9d5ff',horns:true},
-];
-/* ===== tiles ===== */
-const WALL=0,FLOOR=1,DOOR=2,TILE=16,SCALE=3,TPX=TILE*SCALE;
-const tiles={};
-function px(g,x,y,c){g.fillStyle=c;g.fillRect(x,y,1,1);}
-function mkTile(){const c=document.createElement('canvas');c.width=TILE;c.height=TILE;return c;}
-function buildFloor(rng){const c=mkTile(),g=c.getContext('2d');const b=['#0c1119','#0b1017','#0d131c'];
- g.fillStyle='#0a0f16';g.fillRect(0,0,16,16);
- for(let y=0;y<16;y++)for(let x=0;x<16;x++){const r=rng();px(g,x,y,r<.12?b[(r*100|0)%3]:(r>.97?'#13202b':'#0a0f16'));}
- g.fillStyle='#06090e';g.fillRect(0,0,16,1);g.fillRect(0,0,1,16);return c;}
-function buildWall(rng){const c=mkTile(),g=c.getContext('2d');g.fillStyle='#161d27';g.fillRect(0,0,16,16);
- for(let y=0;y<16;y+=4){const off=((y/4)%2)*4;g.fillStyle='#0a0f16';for(let x=-off;x<16;x+=8)g.fillRect(x+7,y,1,4);g.fillRect(0,y,16,1);}
- for(let i=0;i<22;i++){const x=rng()*16|0,y=rng()*16|0;px(g,x,y,rng()<.5?'#1f2a37':'#0c131b');}
- g.fillStyle='rgba(56,189,248,.07)';g.fillRect(0,0,16,1);return c;}
-function buildDoor(){const c=mkTile(),g=c.getContext('2d');g.fillStyle='#0a0f16';g.fillRect(0,0,16,16);
- g.fillStyle='#2a1c06';g.fillRect(3,1,10,14);g.fillStyle='#f59e0b';g.fillRect(4,2,8,12);
- g.fillStyle='#7a3d00';for(let y=3;y<14;y+=3)g.fillRect(4,y,8,1);
- g.fillStyle='#fff7c2';g.fillRect(10,7,1,2);g.fillStyle='rgba(245,158,11,.25)';g.fillRect(2,0,12,16);return c;}
-function buildCreature(e){const c=mkTile(),g=c.getContext('2d');const B=e.col,D=e.col2,G=e.glow;
- g.fillStyle='rgba(0,0,0,.45)';g.fillRect(4,14,8,2);
- const body=["....DDDD....","...DBBBBD...","..DBBBBBBD..","..DBBBBBBD..",".DBBBBBBBBD.",".DBBBBBBBBD.",".DBBBBBBBBD.","..DBBBBBBD..","..DBBBBBBD..","...DB..BD..."];
- const m={B,D};for(let r=0;r<body.length;r++){const row=body[r];for(let x=0;x<row.length;x++){const ch=row[x];if(ch==='.')continue;px(g,x+2,r+4,m[ch]);}}
- if(e.horns){g.fillStyle=D;px(g,4,3,D);px(g,3,2,D);px(g,11,3,D);px(g,12,2,D);px(g,4,4,D);px(g,11,4,D);}
- g.fillStyle=G;g.fillRect(5,8,2,2);g.fillRect(9,8,2,2);g.fillStyle='#000';px(g,6,9,'#000');px(g,10,9,'#000');
- g.fillStyle=G;px(g,7,12,G);px(g,8,13,G);return c;}
-function buildPlayer(){const c=mkTile(),g=c.getContext('2d');
- g.fillStyle='rgba(0,0,0,.45)';g.fillRect(4,14,8,2);g.fillStyle='#10212c';g.fillRect(4,4,8,10);
- g.fillStyle='#18323f';g.fillRect(3,6,10,7);g.fillStyle='#0b1620';g.fillRect(5,2,6,4);
- g.fillStyle='#071019';g.fillRect(5,6,6,3);g.fillStyle='#38bdf8';g.fillRect(6,7,4,1);
- g.fillStyle='#bae6fd';px(g,6,7,'#bae6fd');g.fillStyle='#ff2b44';px(g,7,10,'#ff2b44');px(g,8,10,'#ff2b44');return c;}
-function buildTileset(seed){const rng=mulberry32(seed^0x9e3779b9);tiles.floor=buildFloor(rng);tiles.wall=buildWall(rng);
- tiles.door=buildDoor();tiles.player=buildPlayer();ENEMIES.forEach(e=>tiles['e_'+e.id]=buildCreature(e));}
-/* ===== map gen (BSP) ===== */
-const MAP_W=48,MAP_H=36;let grid,rooms,state,currentSeed='',seedNum=0;
-function genMap(seed){const rng=mulberry32(seed);grid=[];for(let y=0;y<MAP_H;y++)grid[y]=new Array(MAP_W).fill(WALL);rooms=[];
- const leaves=[];
- function split(x,y,w,h,d){const MIN=7;const canH=w>MIN*2,canV=h>MIN*2;
-  if(d<=0||(!canH&&!canV)||(d<4&&rng()<.25)){leaves.push({x,y,w,h});return;}
-  let horiz=canH&&canV?rng()<.5:canH;
-  if(horiz){const cut=(MIN+rng()*(w-MIN*2))|0;split(x,y,cut,h,d-1);split(x+cut,y,w-cut,h,d-1);}
-  else{const cut=(MIN+rng()*(h-MIN*2))|0;split(x,y,w,cut,d-1);split(x,y+cut,w,h-cut,d-1);}}
- split(1,1,MAP_W-2,MAP_H-2,5);
- for(const lf of leaves){const rw=Math.max(4,(lf.w-2)-(rng()*(lf.w*.35))|0),rh=Math.max(4,(lf.h-2)-(rng()*(lf.h*.35))|0);
-  const rx=lf.x+1+((rng()*(lf.w-rw-1))|0),ry=lf.y+1+((rng()*(lf.h-rh-1))|0);
-  const room={x:rx,y:ry,w:rw,h:rh,cx:(rx+rw/2)|0,cy:(ry+rh/2)|0,discovered:false};
-  for(let y=ry;y<ry+rh;y++)for(let x=rx;x<rx+rw;x++)grid[y][x]=FLOOR;rooms.push(room);}
- for(let i=1;i<rooms.length;i++)carveCorridor(rooms[i-1].cx,rooms[i-1].cy,rooms[i].cx,rooms[i].cy,rng);
- for(let k=0;k<3&&rooms.length>3;k++){const a=rooms[(rng()*rooms.length)|0],b=rooms[(rng()*rooms.length)|0];if(a!==b)carveCorridor(a.cx,a.cy,b.cx,b.cy,rng);}
- placeDoors();}
-function carveH(x1,x2,y){for(let x=Math.min(x1,x2);x<=Math.max(x1,x2);x++)if(grid[y][x]===WALL)grid[y][x]=FLOOR;}
-function carveV(y1,y2,x){for(let y=Math.min(y1,y2);y<=Math.max(y1,y2);y++)if(grid[y][x]===WALL)grid[y][x]=FLOOR;}
-function carveCorridor(ax,ay,bx,by,rng){if(rng()<.5){carveH(ax,bx,ay);carveV(ay,by,bx);}else{carveV(ay,by,ax);carveH(ax,bx,by);}}
-function placeDoors(){for(const r of rooms){const edges=[];
- for(let x=r.x;x<r.x+r.w;x++){edges.push([x,r.y-1]);edges.push([x,r.y+r.h]);}
- for(let y=r.y;y<r.y+r.h;y++){edges.push([r.x-1,y]);edges.push([r.x+r.w,y]);}
- for(const[x,y]of edges){if(x<1||y<1||x>=MAP_W-1||y>=MAP_H-1)continue;
-  if(grid[y][x]===FLOOR){const o=(grid[y-1][x]!==WALL)+(grid[y+1][x]!==WALL)+(grid[y][x-1]!==WALL)+(grid[y][x+1]!==WALL);if(o<=2)grid[y][x]=DOOR;}}}}
-function isWalkable(x,y){if(x<0||y<0||x>=MAP_W||y>=MAP_H)return false;return grid[y][x]!==WALL;}
-/* ===== state ===== */
-const canvas=document.getElementById('dungeon-canvas'),ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;
-const radar=document.getElementById('radar'),rctx=radar.getContext('2d');
-function initState(){const start=rooms[0];
- state={px:start.cx,py:start.cy,rx:start.cx*TPX,ry:start.cy*TPX,moving:false,mvx:0,mvy:0,mvt:0,
-  enemies:[],encounter:false,visible:{},discoveredRooms:0};
- const rng=mulberry32(seedNum^0x51ed2701);const picks=rooms.slice(1);
- const count=Math.min(picks.length,4+(rng()<.6?1:0));
- for(let i=0;i<count;i++){const r=picks[(rng()*picks.length)|0],type=ENEMIES[i%ENEMIES.length];
-  state.enemies.push({type,room:r,gx:r.cx,gy:r.cy,rx:r.cx*TPX,ry:r.cy*TPX,moving:false,mvt:0,mvx:0,mvy:0,
-   cd:.4+rng()*.8,timer:0,rng:mulberry32(hashSeed(type.id)^(i*2654435761))});}
- revealAround();}
-function revealAround(){const R=6;for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++){const x=state.px+dx,y=state.py+dy;
- if(x<0||y<0||x>=MAP_W||y>=MAP_H)continue;if(dx*dx+dy*dy<=R*R)state.visible[x+','+y]=true;}
- for(const r of rooms){if(!r.discovered&&state.px>=r.x-1&&state.px<r.x+r.w+1&&state.py>=r.y-1&&state.py<r.y+r.h+1){r.discovered=true;state.discoveredRooms++;}}}
-/* ===== movement ===== */
-const MOVE_TIME=.12;
-function tryMove(dx,dy){if(state.moving||state.encounter)return;const nx=state.px+dx,ny=state.py+dy;if(!isWalkable(nx,ny))return;
- state.moving=true;state.mvt=0;state.mvx=dx;state.mvy=dy;state.px=nx;state.py=ny;}
-function easeOut(t){return 1-(1-t)*(1-t);}
-function updatePlayer(dt){if(state.moving){state.mvt+=dt/MOVE_TIME;
- if(state.mvt>=1){state.mvt=1;state.moving=false;state.rx=state.px*TPX;state.ry=state.py*TPX;revealAround();const d=heldDir();if(d)tryMove(d[0],d[1]);}
- else{const t=easeOut(state.mvt);state.rx=(state.px-state.mvx*(1-t))*TPX;state.ry=(state.py-state.mvy*(1-t))*TPX;}}
- else{const d=heldDir();if(d)tryMove(d[0],d[1]);}}
-function updateEnemies(dt){for(const en of state.enemies){if(en.moving){en.mvt+=dt/.18;
-  if(en.mvt>=1){en.mvt=1;en.moving=false;en.rx=en.gx*TPX;en.ry=en.gy*TPX;}
-  else{const t=easeOut(en.mvt);en.rx=(en.gx-en.mvx*(1-t))*TPX;en.ry=(en.gy-en.mvy*(1-t))*TPX;}}
- else{en.timer+=dt;if(en.timer>=en.cd){en.timer=0;en.cd=.5+en.rng()*.9;
-  const dirs=[[1,0],[-1,0],[0,1],[0,-1]],d=dirs[(en.rng()*4)|0],nx=en.gx+d[0],ny=en.gy+d[1],r=en.room;
-  if(isWalkable(nx,ny)&&nx>=r.x-1&&nx<r.x+r.w+1&&ny>=r.y-1&&ny<r.y+r.h+1){en.gx=nx;en.gy=ny;en.mvx=d[0];en.mvy=d[1];en.moving=true;en.mvt=0;}}}
- if(!state.encounter&&en.gx===state.px&&en.gy===state.py)triggerEncounter(en);}}
-/* ===== encounter handoff ===== */
-function triggerEncounter(en){state.encounter=true;const fx=document.getElementById('fx'),banner=document.getElementById('encBanner');
- document.getElementById('encName').textContent=en.type.name;
- fx.classList.remove('flash');void fx.offsetWidth;fx.classList.add('flash');
- setTimeout(()=>banner.classList.add('show'),120);
- setTimeout(()=>{window.location.href='index.html?enemy='+encodeURIComponent(en.type.id)+'&seed='+encodeURIComponent(currentSeed);},900);}
-/* ===== render ===== */
-let camX=0,camY=0,perf=0;
-function render(){const W=canvas.width,H=canvas.height;
- const tx=state.rx+TPX/2-W/2,ty=state.ry+TPX/2-H/2;camX+=(tx-camX)*.18;camY+=(ty-camY)*.18;
- camX=Math.max(0,Math.min(camX,MAP_W*TPX-W));camY=Math.max(0,Math.min(camY,MAP_H*TPX-H));
- ctx.fillStyle='#02040a';ctx.fillRect(0,0,W,H);
- const x0=Math.max(0,(camX/TPX)|0),y0=Math.max(0,(camY/TPX)|0);
- const x1=Math.min(MAP_W,x0+Math.ceil(W/TPX)+2),y1=Math.min(MAP_H,y0+Math.ceil(H/TPX)+2);
- for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){if(!state.visible[x+','+y])continue;
-  const sx=Math.round(x*TPX-camX),sy=Math.round(y*TPX-camY),t=grid[y][x];
-  const img=t===WALL?tiles.wall:t===DOOR?tiles.door:tiles.floor;ctx.drawImage(img,0,0,TILE,TILE,sx,sy,TPX,TPX);}
- for(const en of state.enemies){if(!state.visible[en.gx+','+en.gy])continue;
-  const sx=Math.round(en.rx-camX),sy=Math.round(en.ry-camY);
-  ctx.save();ctx.globalAlpha=.18+.08*Math.sin(perf*.006+en.gx);ctx.fillStyle=en.type.glow;
-  ctx.beginPath();ctx.arc(sx+TPX/2,sy+TPX/2,TPX*.55,0,7);ctx.fill();ctx.restore();
-  ctx.drawImage(tiles['e_'+en.type.id],0,0,TILE,TILE,sx,sy,TPX,TPX);}
- const psx=Math.round(state.rx-camX),psy=Math.round(state.ry-camY);
- ctx.save();ctx.globalAlpha=.22;ctx.fillStyle='#38bdf8';ctx.beginPath();ctx.arc(psx+TPX/2,psy+TPX/2,TPX*.5,0,7);ctx.fill();ctx.restore();
- ctx.drawImage(tiles.player,0,0,TILE,TILE,psx,psy,TPX,TPX);
- ctx.save();ctx.globalCompositeOperation='multiply';
- const grd=ctx.createRadialGradient(psx+TPX/2,psy+TPX/2,TPX*2,psx+TPX/2,psy+TPX/2,TPX*7);
- grd.addColorStop(0,'rgba(255,255,255,1)');grd.addColorStop(1,'rgba(40,46,56,.35)');
- ctx.fillStyle=grd;ctx.fillRect(0,0,W,H);ctx.restore();drawRadar();}
-function drawRadar(){const W=radar.width,H=radar.height;rctx.fillStyle='#02040a';rctx.fillRect(0,0,W,H);
- const s=Math.min(W/MAP_W,H/MAP_H),ox=(W-MAP_W*s)/2,oy=(H-MAP_H*s)/2;
- for(const r of rooms){if(!r.discovered)continue;rctx.fillStyle='rgba(56,189,248,.18)';rctx.fillRect(ox+r.x*s,oy+r.y*s,r.w*s,r.h*s);
-  rctx.strokeStyle='rgba(56,189,248,.5)';rctx.strokeRect(ox+r.x*s+.5,oy+r.y*s+.5,r.w*s-1,r.h*s-1);}
- for(const en of state.enemies){if(!en.room.discovered)continue;rctx.fillStyle=en.type.col;rctx.fillRect(ox+en.gx*s-1,oy+en.gy*s-1,s+2,s+2);}
- rctx.fillStyle='#fff';rctx.fillRect(ox+state.px*s-1,oy+state.py*s-1,s+2,s+2);
- rctx.fillStyle='#ff2b44';rctx.fillRect(ox+state.px*s,oy+state.py*s,s,s);}
-function updateHUD(){document.getElementById('posStat').textContent=state.px+','+state.py;
- document.getElementById('roomStat').textContent=state.discoveredRooms+' / '+rooms.length;
- document.getElementById('enemyStat').textContent=state.enemies.length;
- document.getElementById('clearStat').textContent=Math.round(state.discoveredRooms/rooms.length*100)+'%';}
-/* ===== input ===== */
-const held={},KEYMAP={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',s:'down',a:'left',d:'right',W:'up',S:'down',A:'left',D:'right'};
-function heldDir(){if(held.up)return[0,-1];if(held.down)return[0,1];if(held.left)return[-1,0];if(held.right)return[1,0];return null;}
-addEventListener('keydown',e=>{const d=KEYMAP[e.key];if(!d)return;e.preventDefault();held[d]=true;});
-addEventListener('keyup',e=>{if(KEYMAP[e.key])held[KEYMAP[e.key]]=false;});
-document.querySelectorAll('.dpad button[data-dir]').forEach(b=>{const dir=b.dataset.dir;
- const on=e=>{e.preventDefault();held[dir]=true;},off=e=>{e.preventDefault();held[dir]=false;};
- b.addEventListener('mousedown',on);b.addEventListener('mouseup',off);b.addEventListener('mouseleave',off);
- b.addEventListener('touchstart',on,{passive:false});b.addEventListener('touchend',off,{passive:false});});
-/* ===== boot + loop ===== */
-function resize(){const stage=canvas.parentElement;canvas.width=Math.min(stage.clientWidth,1200);canvas.height=Math.min(stage.clientHeight,760);}
-window.addEventListener('resize',resize);
-function setupLegend(){const l=document.getElementById('legend');l.innerHTML='';
- ENEMIES.forEach(e=>{const row=document.createElement('div');row.innerHTML='<i style="background:'+e.col+'"></i>'+e.name;l.appendChild(row);});}
-function boot(seedStr){currentSeed=seedStr||'arabella';seedNum=hashSeed(currentSeed);
- document.getElementById('floorTag').textContent='SECTOR 01 · SEED '+currentSeed.toUpperCase();
- document.getElementById('seedInput').value=currentSeed;
- buildTileset(seedNum);genMap(seedNum);initState();setupLegend();updateHUD();}
-document.getElementById('regen').addEventListener('click',()=>{const s=document.getElementById('seedInput').value.trim()||'arabella';boot(s);});
-document.getElementById('seedInput').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('regen').click();});
-const urlSeed=new URLSearchParams(location.search).get('seed');
-resize();boot(urlSeed);
-let lastTime=performance.now(),fc=0,fpsTimer=0;
-function loop(now){const dt=Math.min(.06,(now-lastTime)/1000);lastTime=now;perf=now;
- updatePlayer(dt);updateEnemies(dt);render();updateHUD();
- fc++;fpsTimer+=dt;if(fpsTimer>=.5){document.getElementById('fps').textContent=Math.round(fc/fpsTimer)+' FPS';fc=0;fpsTimer=0;}
- requestAnimationFrame(loop);}
-requestAnimationFrame(loop);
+  (function() {
+    'use strict';
+    var canvas = document.getElementById('dungeonCanvas');
+    var ctx = canvas.getContext('2d');
+    var posVal = document.getElementById('posVal');
+    var sectorVal = document.getElementById('sectorVal');
+    var hostileVal = document.getElementById('hostileVal');
+    var bossHpVal = document.getElementById('bossHpVal');
+    var bossAlert = document.getElementById('bossAlert');
+    var fpsCounter = document.getElementById('fpsCounter');
+    var floorBadge = document.getElementById('floorBadge');
+
+    var TILE = 24;
+    var COLS = 24;
+    var ROWS = 24;
+
+    var state = {
+      player: { x: 4, y: 14 },
+      boss: null,
+      isBossFloor: false,
+      hostiles: [],
+      grid: [],
+      lastTime: performance.now(),
+      frames: 0,
+      fps: 60
+    };
+
+    function initNormalFloor(seed) {
+      state.isBossFloor = false;
+      bossAlert.style.display = 'none';
+      floorBadge.textContent = 'SECTOR 01 · SEED ' + seed.toUpperCase();
+      sectorVal.textContent = '01 / 06';
+      state.grid = [];
+      for (var y = 0; y < ROWS; y++) {
+        var row = [];
+        for (var x = 0; x < COLS; x++) {
+          var isBorder = (x === 0 || x === COLS - 1 || y === 0 || y === ROWS - 1);
+          var isObstacle = (x % 5 === 0 && y % 5 === 0);
+          row.push((isBorder || isObstacle) ? 1 : 0);
+        }
+        state.grid.push(row);
+      }
+      state.player = { x: 4, y: 14 };
+      state.hostiles = [
+        { x: 8, y: 8, name: 'DAEMON SENTINEL', hp: 120 },
+        { x: 16, y: 6, name: 'PYRO CLOCKER', hp: 90 },
+        { x: 18, y: 18, name: 'CRYO DRIFTER', hp: 95 },
+        { x: 6, y: 18, name: 'SPARK HARVESTER', hp: 100 }
+      ];
+      state.boss = null;
+      updateUI();
+    }
+
+    function initBossSanctumFloor() {
+      state.isBossFloor = true;
+      bossAlert.style.display = 'block';
+      floorBadge.textContent = 'SECTOR 06 · SANCTUM [BOSS]';
+      sectorVal.textContent = '06 / 06';
+      
+      // Build boss sanctum from boss.js if available
+      if (window.SiliconBoss && window.SiliconBoss.buildSanctum) {
+        var sanctum = window.SiliconBoss.buildSanctum(COLS, ROWS, 'boss');
+        state.grid = sanctum.cells;
+        state.player = { x: sanctum.playerSpawn.x, y: sanctum.playerSpawn.y };
+        state.boss = window.SiliconBoss.create('boss');
+        state.boss.x = sanctum.bossSpawn.x;
+        state.boss.y = sanctum.bossSpawn.y;
+      } else {
+        // Fallback boss arena
+        state.grid = [];
+        for (var y = 0; y < ROWS; y++) {
+          var r = [];
+          for (var x = 0; x < COLS; x++) {
+            r.push((x < 2 || x >= COLS - 2 || y < 2 || y >= ROWS - 2) ? 1 : 0);
+          }
+          state.grid.push(r);
+        }
+        state.player = { x: 12, y: 18 };
+        state.boss = { x: 12, y: 8, name: 'NULL COLOSSUS', integrity: 360, maxIntegrity: 360, pressTurns: 2 };
+      }
+      state.hostiles = [];
+      updateUI();
+    }
+
+    function updateUI() {
+      posVal.textContent = state.player.x + ',' + state.player.y;
+      hostileVal.textContent = state.isBossFloor ? (state.boss ? '1 [BOSS]' : '0') : state.hostiles.length;
+      if (state.boss) {
+        bossHpVal.textContent = state.boss.integrity + ' / ' + state.boss.maxIntegrity;
+      } else {
+        bossHpVal.textContent = 'N/A';
+      }
+    }
+
+    function tryMove(dx, dy) {
+      var nx = state.player.x + dx;
+      var ny = state.player.y + dy;
+      if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS) {
+        if (state.grid[ny][nx] === 0) {
+          state.player.x = nx;
+          state.player.y = ny;
+          
+          // Check collision with Boss
+          if (state.isBossFloor && state.boss && Math.abs(state.player.x - state.boss.x) <= 1 && Math.abs(state.player.y - state.boss.y) <= 1) {
+            window.location.href = 'index.html?encounter=boss';
+            return;
+          }
+          // Check collision with hostiles
+          for (var i = 0; i < state.hostiles.length; i++) {
+            if (state.hostiles[i].x === nx && state.hostiles[i].y === ny) {
+              window.location.href = 'index.html?encounter=' + encodeURIComponent(state.hostiles[i].name);
+              return;
+            }
+          }
+          updateUI();
+        }
+      }
+    }
+
+    // Input handlers
+    window.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') tryMove(0, -1);
+      if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') tryMove(0, 1);
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') tryMove(-1, 0);
+      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') tryMove(1, 0);
+    });
+
+    document.getElementById('btnUp').onclick = function() { tryMove(0, -1); };
+    document.getElementById('btnDown').onclick = function() { tryMove(0, 1); };
+    document.getElementById('btnLeft').onclick = function() { tryMove(-1, 0); };
+    document.getElementById('btnRight').onclick = function() { tryMove(1, 0); };
+    document.getElementById('regenBtn').onclick = function() {
+      var s = document.getElementById('seedInput').value || 'arabella';
+      initNormalFloor(s);
+    };
+    document.getElementById('bossSanctumBtn').onclick = function() {
+      initBossSanctumFloor();
+    };
+
+    // Render loop
+    function render(now) {
+      state.frames++;
+      if (now - state.lastTime >= 1000) {
+        state.fps = Math.round((state.frames * 1000) / (now - state.lastTime));
+        fpsCounter.textContent = state.fps + ' FPS';
+        state.frames = 0;
+        state.lastTime = now;
+      }
+
+      ctx.fillStyle = '#050608';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw grid
+      for (var y = 0; y < ROWS; y++) {
+        for (var x = 0; x < COLS; x++) {
+          var cell = state.grid[y] ? state.grid[y][x] : 0;
+          if (cell === 1) {
+            ctx.fillStyle = state.isBossFloor ? '#3b1219' : '#111827';
+            ctx.fillRect(x * TILE, y * TILE, TILE - 1, TILE - 1);
+            ctx.strokeStyle = state.isBossFloor ? '#ff2a4b' : '#1f2937';
+            ctx.strokeRect(x * TILE, y * TILE, TILE - 1, TILE - 1);
+          } else {
+            ctx.fillStyle = '#0a0d14';
+            ctx.fillRect(x * TILE, y * TILE, TILE - 1, TILE - 1);
+          }
+        }
+      }
+
+      // Draw Hostiles
+      ctx.fillStyle = '#f59e0b';
+      for (var i = 0; i < state.hostiles.length; i++) {
+        var h = state.hostiles[i];
+        ctx.fillRect(h.x * TILE + 4, h.y * TILE + 4, TILE - 8, TILE - 8);
+      }
+
+      // Draw Boss in Sanctum
+      if (state.isBossFloor && state.boss) {
+        ctx.fillStyle = '#ff2a4b';
+        ctx.fillRect((state.boss.x - 1) * TILE, (state.boss.y - 1) * TILE, TILE * 3, TILE * 3);
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2;
+        ctx.strokeRect((state.boss.x - 1) * TILE, (state.boss.y - 1) * TILE, TILE * 3, TILE * 3);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 9px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('ARCHON', state.boss.x * TILE + TILE / 2, state.boss.y * TILE + 4);
+      }
+
+      // Draw Player
+      ctx.fillStyle = '#06b6d4';
+      ctx.fillRect(state.player.x * TILE + 2, state.player.y * TILE + 2, TILE - 4, TILE - 4);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(state.player.x * TILE + 2, state.player.y * TILE + 2, TILE - 4, TILE - 4);
+
+      requestAnimationFrame(render);
+    }
+
+    // Check URL params
+    var urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('floor') === 'boss' || urlParams.get('sector') === '06') {
+      initBossSanctumFloor();
+    } else {
+      initNormalFloor('arabella');
+    }
+
+    requestAnimationFrame(render);
+  })();
 </script>
 </body>
 </html>
