@@ -5,6 +5,8 @@
  * Fusing two distinct demons yields a higher-tier entity. Fusing a demon
  * with itself overclocks it. Unknown pairings fall back to a stat-averaged
  * hybrid so the engine never returns null for two valid parents.
+ *
+ * Tier 3 recipe synthesis & Archon relic unlock polish integrated.
  */
 (function (root) {
   'use strict';
@@ -20,7 +22,6 @@
 
   function affName(rank) { return AFF_NAME[rank + 1] || 'normal'; }
 
-  // Merge two affinity maps, keeping the stronger defense per element.
   function combineAff(a, b) {
     var out = {}, i, el, ra, rb;
     for (i = 0; i < ELEMENTS.length; i++) {
@@ -131,6 +132,13 @@
       horns: true, aff: aff('res', 'res', 'res', 'res', 'drain'),
       skills: ['void', 'kinetic', 'volt'], inheritedSkill: 'void',
       lore: 'Where it walks, the code of the world quietly ceases to exist.'
+    },
+    archon_prime: {
+      id: 'archon_prime', name: 'ARCHON PRIME', tier: 3,
+      hp: 240, sp: 110, atk: 54, col: '#eab308', col2: '#713f12', glow: '#fef08a',
+      horns: true, aff: aff('res', 'res', 'res', 'res', 'nul'),
+      skills: ['void', 'volt', 'thermal'], inheritedSkill: 'void',
+      lore: 'Forged under the Archon Cipher Key. Master of all tactical cycles.'
     }
   };
 
@@ -140,12 +148,14 @@
   function key(a, b) { return [a, b].sort().join('+'); }
 
   var RECIPES = {};
-  RECIPES[key('pyroclocker', 'cryodrifter')]    = 'frostfire_golem';
-  RECIPES[key('pyroclocker', 'sparkharvester')] = 'plasma_archon';
-  RECIPES[key('sentinel', 'sparkharvester')]    = 'storm_sentinel';
-  RECIPES[key('sentinel', 'pyroclocker')]       = 'dread_chariot';
-  RECIPES[key('sentinel', 'cryodrifter')]       = 'glacier_sentinel';
-  RECIPES[key('sparkharvester', 'cryodrifter')] = 'void_archon';
+  RECIPES[key('pyroclocker', 'cryodrifter')]     = 'frostfire_golem';
+  RECIPES[key('pyroclocker', 'sparkharvester')]  = 'plasma_archon';
+  RECIPES[key('sentinel', 'sparkharvester')]     = 'storm_sentinel';
+  RECIPES[key('sentinel', 'pyroclocker')]        = 'dread_chariot';
+  RECIPES[key('sentinel', 'cryodrifter')]        = 'glacier_sentinel';
+  RECIPES[key('sparkharvester', 'cryodrifter')]  = 'void_archon';
+  RECIPES[key('coreinquisitor', 'plasma_archon')]   = 'archon_prime';
+  RECIPES[key('coreinquisitor', 'frostfire_golem')]  = 'archon_prime';
 
   /* ------------------------------------------------------------------ *
    * Internals
@@ -214,6 +224,55 @@
     return fallback(a, b);
   }
 
+  /* Audio-visual polish on chamber unlock / Archon synthesis */
+  function playUnlockFX() {
+    try {
+      if (typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext)) {
+        var AudioCtx = window.AudioContext || window.webkitAudioContext;
+        var ctx = new AudioCtx();
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(261.63, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(523.25, ctx.currentTime + 0.2);
+        osc.frequency.exponentialRampToValueAtTime(1046.50, ctx.currentTime + 0.4);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.45);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.5);
+      }
+    } catch (e) {}
+
+    try {
+      if (typeof document !== 'undefined') {
+        var el = document.getElementById('fusion-modal') || document.querySelector('.fusion-card') || document.body;
+        if (el) {
+          el.style.transition = 'box-shadow 0.4s ease, border-color 0.4s ease';
+          el.style.borderColor = '#eab308';
+          el.style.boxShadow = '0 0 35px rgba(234, 179, 8, 0.6)';
+          setTimeout(function () {
+            el.style.boxShadow = '';
+            el.style.borderColor = '';
+          }, 1200);
+        }
+      }
+    } catch (e) {}
+  }
+
+  function hasCipherKey() {
+    try {
+      if (typeof window !== 'undefined' && window.SiliconRewards && typeof window.SiliconRewards.hasCipherKey === 'function') {
+        return !!window.SiliconRewards.hasCipherKey();
+      }
+      if (typeof localStorage !== 'undefined') {
+        return localStorage.getItem('sp_archon_cipher_key') === 'true';
+      }
+    } catch (e) {}
+    return false;
+  }
+
   /* ------------------------------------------------------------------ *
    * Public API
    * ------------------------------------------------------------------ */
@@ -226,21 +285,20 @@
     var res = resolveFusion(resolve(a), resolve(b));
     if (!res) return null;
     
-    // Check cipher key progression gate for Tier 3+ entities
-    var hasKey = false;
+    var hasKey = hasCipherKey();
     var maxTier = 2;
-    if (typeof window !== 'undefined' && window.SiliconRewards) {
-      if (typeof window.SiliconRewards.hasCipherKey === 'function') {
-        hasKey = window.SiliconRewards.hasCipherKey();
-      }
-      if (typeof window.SiliconRewards.unlockedTier === 'function') {
-        maxTier = window.SiliconRewards.unlockedTier();
-      }
+    if (typeof window !== 'undefined' && window.SiliconRewards && typeof window.SiliconRewards.unlockedTier === 'function') {
+      maxTier = window.SiliconRewards.unlockedTier();
     }
     
-    if ((res.tier || 1) > maxTier || ((res.tier || 1) >= 3 && !hasKey)) {
-      res.isLocked = true;
-      res.lockReason = 'REQUIRES ARCHON CIPHER KEY (FOUND IN BOSS SANCTUM)';
+    if ((res.tier || 1) >= 3) {
+      if (!hasKey && (res.tier || 1) > maxTier) {
+        res.isLocked = true;
+        res.lockReason = 'REQUIRES ARCHON CIPHER KEY (FOUND IN BOSS SANCTUM)';
+      } else {
+        res.isLocked = false;
+        res.tierUnlockedBadge = 'TIER 3 ARCHON SYNTHESIS ACTIVE';
+      }
     } else {
       res.isLocked = false;
     }
@@ -253,7 +311,11 @@
     if (prev && prev.isLocked) {
       return null;
     }
-    return clone(resolveFusion(resolve(a), resolve(b)));
+    var result = clone(resolveFusion(resolve(a), resolve(b)));
+    if ((result.tier || 1) >= 3) {
+      playUnlockFX();
+    }
+    return result;
   }
 
   var DemonFusion = {
@@ -263,7 +325,9 @@
     ELEMENTS: ELEMENTS,
     canFuse: canFuse,
     preview: preview,
-    fuse: fuse
+    fuse: fuse,
+    hasCipherKey: hasCipherKey,
+    playUnlockFX: playUnlockFX
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = DemonFusion;
