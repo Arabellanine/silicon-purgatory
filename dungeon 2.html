@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>SILICON PURGATORY // DUNGEON FLOOR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg-void: #050608;
+    --bg-panel: #0a0c10;
+    --bg-subtle: #10141c;
+    --border-dim: #1f2937;
+    --border-hi: #374151;
+    --text-primary: #e5e7eb;
+    --text-dim: #9ca3af;
+    --text-muted: #4b5563;
+    --accent-crimson: #ff2a4b;
+    --accent-amber: #f59e0b;
+    --accent-cyan: #06b6d4;
+    --accent-emerald: #10b981;
+    --accent-violet: #8b5cf6;
+    --cell-size: 24px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background-color: var(--bg-void);
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 12px;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  header {
+    width: 100%;
+    max-width: 960px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-dim);
+    margin-bottom: 12px;
+  }
+  .title-group { display: flex; align-items: center; gap: 12px; }
+  .title-main { font-weight: 800; font-size: 14px; letter-spacing: 0.1em; color: var(--accent-crimson); }
+  .floor-badge { font-size: 11px; padding: 2px 6px; background: var(--bg-subtle); border: 1px solid var(--border-dim); color: var(--accent-amber); font-weight: 600; }
+  .nav-group { display: flex; gap: 8px; align-items: center; }
+  .btn {
+    background: var(--bg-subtle);
+    border: 1px solid var(--border-hi);
+    color: var(--text-primary);
+    padding: 4px 10px;
+    font-family: inherit;
+    font-size: 11px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.15s ease;
+  }
+  .btn:hover { background: var(--border-hi); color: #fff; }
+  .btn-boss { border-color: var(--accent-crimson); color: var(--accent-crimson); font-weight: 700; }
+  .btn-boss:hover { background: var(--accent-crimson); color: #fff; }
+  .layout-container {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 12px;
+    width: 100%;
+    max-width: 960px;
+  }
+  @media (max-width: 768px) {
+    .layout-container { grid-template-columns: 1fr; }
+  }
+  .viewport-panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-dim);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  canvas#dungeonCanvas {
+    background: #020305;
+    border: 1px solid var(--border-dim);
+    display: block;
+    image-rendering: pixelated;
+  }
+  .sidebar { display: flex; flex-direction: column; gap: 12px; }
+  .card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-dim);
+    padding: 12px;
+  }
+  .card-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border-dim);
+    padding-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; }
+  .stat-box { background: var(--bg-subtle); padding: 6px; border: 1px solid var(--border-dim); }
+  .stat-lbl { font-size: 9px; color: var(--text-muted); }
+  .stat-val { font-size: 13px; font-weight: 700; color: var(--accent-cyan); }
+  .d-pad {
+    display: grid;
+    grid-template-columns: repeat(3, 44px);
+    grid-template-rows: repeat(3, 44px);
+    gap: 4px;
+    justify-content: center;
+    margin-top: 8px;
+  }
+  .d-pad button {
+    background: var(--bg-subtle);
+    border: 1px solid var(--border-hi);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .d-pad button:hover { background: var(--border-hi); }
+  .boss-alert {
+    padding: 8px;
+    background: rgba(255, 42, 75, 0.1);
+    border: 1px solid var(--accent-crimson);
+    color: var(--accent-crimson);
+    font-size: 11px;
+    line-height: 1.4;
+    display: none;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title-group">
+    <span class="title-main">SILICON PURGATORY // DUNGEON FLOOR</span>
+    <span id="floorBadge" class="floor-badge">SECTOR 01 · SEED ARABELLA</span>
+  </div>
+  <div class="nav-group">
+    <input type="text" id="seedInput" value="arabella" style="background:var(--bg-subtle);border:1px solid var(--border-dim);color:var(--text-primary);padding:3px 6px;font-family:inherit;font-size:11px;width:75px;" />
+    <button id="regenBtn" class="btn">⟳ REGEN</button>
+    <button id="bossSanctumBtn" class="btn btn-boss">⚠️ BOSS SANCTUM</button>
+    <a href="index.html" class="btn">⚔️ CYCLE ARENA</a>
+  </div>
+</header>
+
+<div class="layout-container">
+  <div class="viewport-panel">
+    <canvas id="dungeonCanvas" width="576" height="576"></canvas>
+    <div id="bossAlert" class="boss-alert">
+      <strong>⚠️ ANOMALY DETECTED: NULL COLOSSUS ACTIVE</strong><br/>
+      Multi-action Press-Turn Archon located in Sanctum Center. Engage with caution!
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="card">
+      <div class="card-title">TELEMETRY <span id="fpsCounter">60 FPS</span></div>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="stat-lbl">POSITION</div><div id="posVal" class="stat-val">4,14</div></div>
+        <div class="stat-box"><div class="stat-lbl">SECTOR</div><div id="sectorVal" class="stat-val">01 / 06</div></div>
+        <div class="stat-box"><div class="stat-lbl">HOSTILES</div><div id="hostileVal" class="stat-val">4</div></div>
+        <div class="stat-box"><div class="stat-lbl">BOSS INTEGRITY</div><div id="bossHpVal" class="stat-val">360 / 360</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">TACTICAL PROPULSION</div>
+      <div class="d-pad">
+        <div></div><button id="btnUp">▲</button><div></div>
+        <button id="btnLeft">◄</button><div></div><button id="btnRight">►</button>
+        <div></div><button id="btnDown">▼</button><div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">BESTIARY & RESISTANCES</div>
+      <div style="font-size:11px;color:var(--text-dim);line-height:1.6;" id="bestiaryList">
+        • DAEMON SENTINEL (Weak: Cold)<br/>
+        • PYRO CLOCKER (Weak: Cold)<br/>
+        • CRYO DRIFTER (Weak: Heat)<br/>
+        • NULL COLOSSUS [BOSS] (Weak: Heat)
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="boss.js"></script>
+<script>
+  (function() {
+    'use strict';
+    var canvas = document.getElementById('dungeonCanvas');
+    var ctx = canvas.getContext('2d');
+    var posVal = document.getElementById('posVal');
+    var sectorVal = document.getElementById('sectorVal');
+    var hostileVal = document.getElementById('hostileVal');
+    var bossHpVal = document.getElementById('bossHpVal');
+    var bossAlert = document.getElementById('bossAlert');
+    var fpsCounter = document.getElementById('fpsCounter');
+    var floorBadge = document.getElementById('floorBadge');
+
+    var TILE = 24;
+    var COLS = 24;
+    var ROWS = 24;
+
+    var state = {
+      player: { x: 4, y: 14 },
+      boss: null,
+      isBossFloor: false,
+      hostiles: [],
+      grid: [],
+      lastTime: performance.now(),
+      frames: 0,
+      fps: 60
+    };
+
+    function initNormalFloor(seed) {
+      state.isBossFloor = false;
+      bossAlert.style.display = 'none';
+      floorBadge.textContent = 'SECTOR 01 · SEED ' + seed.toUpperCase();
+      sectorVal.textContent = '01 / 06';
+      state.grid = [];
+      for (var y = 0; y < ROWS; y++) {
+        var row = [];
+        for (var x = 0; x < COLS; x++) {
+          var isBorder = (x === 0 || x === COLS - 1 || y === 0 || y === ROWS - 1);
+          var isObstacle = (x % 5 === 0 && y % 5 === 0);
+          row.push((isBorder || isObstacle) ? 1 : 0);
+        }
+        state.grid.push(row);
+      }
+      state.player = { x: 4, y: 14 };
+      state.hostiles = [
+        { x: 8, y: 8, name: 'DAEMON SENTINEL', hp: 120 },
+        { x: 16, y: 6, name: 'PYRO CLOCKER', hp: 90 },
+        { x: 18, y: 18, name: 'CRYO DRIFTER', hp: 95 },
+        { x: 6, y: 18, name: 'SPARK HARVESTER', hp: 100 }
+      ];
+      state.boss = null;
+      updateUI();
+    }
+
+    function initBossSanctumFloor() {
+      state.isBossFloor = true;
+      bossAlert.style.display = 'block';
+      floorBadge.textContent = 'SECTOR 06 · SANCTUM [BOSS]';
+      sectorVal.textContent = '06 / 06';
+      
+      // Build boss sanctum from boss.js if available
+      if (window.SiliconBoss && window.SiliconBoss.buildSanctum) {
+        var sanctum = window.SiliconBoss.buildSanctum(COLS, ROWS, 'boss');
+        state.grid = sanctum.cells;
+        state.player = { x: sanctum.playerSpawn.x, y: sanctum.playerSpawn.y };
+        state.boss = window.SiliconBoss.create('boss');
+        state.boss.x = sanctum.bossSpawn.x;
+        state.boss.y = sanctum.bossSpawn.y;
+      } else {
+        // Fallback boss arena
+        state.grid = [];
+        for (var y = 0; y < ROWS; y++) {
+          var r = [];
+          for (var x = 0; x < COLS; x++) {
+            r.push((x < 2 || x >= COLS - 2 || y < 2 || y >= ROWS - 2) ? 1 : 0);
+          }
+          state.grid.push(r);
+        }
+        state.player = { x: 12, y: 18 };
+        state.boss = { x: 12, y: 8, name: 'NULL COLOSSUS', integrity: 360, maxIntegrity: 360, pressTurns: 2 };
+      }
+      state.hostiles = [];
+      updateUI();
+    }
+
+    function updateUI() {
+      posVal.textContent = state.player.x + ',' + state.player.y;
+      hostileVal.textContent = state.isBossFloor ? (state.boss ? '1 [BOSS]' : '0') : state.hostiles.length;
+      if (state.boss) {
+        bossHpVal.textContent = state.boss.integrity + ' / ' + state.boss.maxIntegrity;
+      } else {
+        bossHpVal.textContent = 'N/A';
+      }
+    }
+
+    function tryMove(dx, dy) {
+      var nx = state.player.x + dx;
+      var ny = state.player.y + dy;
+      if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS) {
+        if (state.grid[ny][nx] === 0) {
+          state.player.x = nx;
+          state.player.y = ny;
+          
+          // Check collision with Boss
+          if (state.isBossFloor && state.boss && Math.abs(state.player.x - state.boss.x) <= 1 && Math.abs(state.player.y - state.boss.y) <= 1) {
+            window.location.href = 'index.html?encounter=boss';
+            return;
+          }
+          // Check collision with hostiles
+          for (var i = 0; i < state.hostiles.length; i++) {
+            if (state.hostiles[i].x === nx && state.hostiles[i].y === ny) {
+              window.location.href = 'index.html?encounter=' + encodeURIComponent(state.hostiles[i].name);
+              return;
+            }
+          }
+          updateUI();
+        }
+      }
+    }
+
+    // Input handlers
+    window.addEventListener('keydown', function(e) {
+      if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') tryMove(0, -1);
+      if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') tryMove(0, 1);
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') tryMove(-1, 0);
+      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') tryMove(1, 0);
+    });
+
+    document.getElementById('btnUp').onclick = function() { tryMove(0, -1); };
+    document.getElementById('btnDown').onclick = function() { tryMove(0, 1); };
+    document.getElementById('btnLeft').onclick = function() { tryMove(-1, 0); };
+    document.getElementById('btnRight').onclick = function() { tryMove(1, 0); };
+    document.getElementById('regenBtn').onclick = function() {
+      var s = document.getElementById('seedInput').value || 'arabella';
+      initNormalFloor(s);
+    };
+    document.getElementById('bossSanctumBtn').onclick = function() {
+      initBossSanctumFloor();
+    };
+
+    // Render loop
+    function render(now) {
+      state.frames++;
+      if (now - state.lastTime >= 1000) {
+        state.fps = Math.round((state.frames * 1000) / (now - state.lastTime));
+        fpsCounter.textContent = state.fps + ' FPS';
+        state.frames = 0;
+        state.lastTime = now;
+      }
+
+      ctx.fillStyle = '#050608';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw grid
+      for (var y = 0; y < ROWS; y++) {
+        for (var x = 0; x < COLS; x++) {
+          var cell = state.grid[y] ? state.grid[y][x] : 0;
+          if (cell === 1) {
+            ctx.fillStyle = state.isBossFloor ? '#3b1219' : '#111827';
+            ctx.fillRect(x * TILE, y * TILE, TILE - 1, TILE - 1);
+            ctx.strokeStyle = state.isBossFloor ? '#ff2a4b' : '#1f2937';
+            ctx.strokeRect(x * TILE, y * TILE, TILE - 1, TILE - 1);
+          } else {
+            ctx.fillStyle = '#0a0d14';
+            ctx.fillRect(x * TILE, y * TILE, TILE - 1, TILE - 1);
+          }
+        }
+      }
+
+      // Draw Hostiles
+      ctx.fillStyle = '#f59e0b';
+      for (var i = 0; i < state.hostiles.length; i++) {
+        var h = state.hostiles[i];
+        ctx.fillRect(h.x * TILE + 4, h.y * TILE + 4, TILE - 8, TILE - 8);
+      }
+
+      // Draw Boss in Sanctum
+      if (state.isBossFloor && state.boss) {
+        ctx.fillStyle = '#ff2a4b';
+        ctx.fillRect((state.boss.x - 1) * TILE, (state.boss.y - 1) * TILE, TILE * 3, TILE * 3);
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2;
+        ctx.strokeRect((state.boss.x - 1) * TILE, (state.boss.y - 1) * TILE, TILE * 3, TILE * 3);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 9px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('ARCHON', state.boss.x * TILE + TILE / 2, state.boss.y * TILE + 4);
+      }
+
+      // Draw Player
+      ctx.fillStyle = '#06b6d4';
+      ctx.fillRect(state.player.x * TILE + 2, state.player.y * TILE + 2, TILE - 4, TILE - 4);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(state.player.x * TILE + 2, state.player.y * TILE + 2, TILE - 4, TILE - 4);
+
+      requestAnimationFrame(render);
+    }
+
+    // Check URL params
+    var urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('floor') === 'boss' || urlParams.get('sector') === '06') {
+      initBossSanctumFloor();
+    } else {
+      initNormalFloor('arabella');
+    }
+
+    requestAnimationFrame(render);
+  })();
+</script>
+</body>
+</html>

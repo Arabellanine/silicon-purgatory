@@ -8,426 +8,430 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --bg-void: #050608;
-    --bg-panel: #0a0c10;
-    --bg-subtle: #10141c;
-    --border-dim: #1f2937;
-    --border-hi: #374151;
-    --text-primary: #e5e7eb;
-    --text-dim: #9ca3af;
-    --text-muted: #4b5563;
-    --accent-crimson: #ff2a4b;
-    --accent-amber: #f59e0b;
-    --accent-cyan: #06b6d4;
-    --accent-emerald: #10b981;
-    --accent-violet: #8b5cf6;
-    --cell-size: 24px;
+    --bg:#07090e; --panel:#0c0f17; --panel-border:#1c2438;
+    --crimson:#ff2b4e; --crimson-dim:#7a1226;
+    --gold:#ffc14d; --gold-dim:#8a6a1e;
+    --cyan:#49e2ff; --cyan-dim:#135d6e;
+    --ink:#c7d0e0; --dim:#5a6478; --dark:#05060a;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background-color: var(--bg-void);
-    color: var(--text-primary);
-    font-family: 'JetBrains Mono', monospace;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-height: 100vh;
-    padding: 12px;
-    user-select: none;
-    -webkit-user-select: none;
-  }
-  header {
-    width: 100%;
-    max-width: 960px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 16px;
-    background: var(--bg-panel);
-    border: 1px solid var(--border-dim);
-    margin-bottom: 12px;
-  }
-  .title-group { display: flex; align-items: center; gap: 12px; }
-  .title-main { font-weight: 800; font-size: 14px; letter-spacing: 0.1em; color: var(--accent-crimson); }
-  .floor-badge { font-size: 11px; padding: 2px 6px; background: var(--bg-subtle); border: 1px solid var(--border-dim); color: var(--accent-amber); font-weight: 600; }
-  .nav-group { display: flex; gap: 8px; align-items: center; }
-  .btn {
-    background: var(--bg-subtle);
-    border: 1px solid var(--border-hi);
-    color: var(--text-primary);
-    padding: 4px 10px;
-    font-family: inherit;
-    font-size: 11px;
-    cursor: pointer;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    transition: all 0.15s ease;
-  }
-  .btn:hover { background: var(--border-hi); color: #fff; }
-  .btn-boss { border-color: var(--accent-crimson); color: var(--accent-crimson); font-weight: 700; }
-  .btn-boss:hover { background: var(--accent-crimson); color: #fff; }
-  .layout-container {
-    display: grid;
-    grid-template-columns: 1fr 300px;
-    gap: 12px;
-    width: 100%;
-    max-width: 960px;
-  }
-  @media (max-width: 768px) {
-    .layout-container { grid-template-columns: 1fr; }
-  }
-  .viewport-panel {
-    background: var(--bg-panel);
-    border: 1px solid var(--border-dim);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 12px;
-    position: relative;
-    overflow: hidden;
-  }
-  canvas#dungeonCanvas {
-    background: #020305;
-    border: 1px solid var(--border-dim);
-    display: block;
-    image-rendering: pixelated;
-  }
-  .sidebar { display: flex; flex-direction: column; gap: 12px; }
-  .card {
-    background: var(--bg-panel);
-    border: 1px solid var(--border-dim);
-    padding: 12px;
-  }
-  .card-title {
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--text-dim);
-    letter-spacing: 0.1em;
-    margin-bottom: 8px;
-    border-bottom: 1px solid var(--border-dim);
-    padding-bottom: 4px;
-    display: flex;
-    justify-content: space-between;
-  }
-  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px; }
-  .stat-box { background: var(--bg-subtle); padding: 6px; border: 1px solid var(--border-dim); }
-  .stat-lbl { font-size: 9px; color: var(--text-muted); }
-  .stat-val { font-size: 13px; font-weight: 700; color: var(--accent-cyan); }
-  .d-pad {
-    display: grid;
-    grid-template-columns: repeat(3, 44px);
-    grid-template-rows: repeat(3, 44px);
-    gap: 4px;
-    justify-content: center;
-    margin-top: 8px;
-  }
-  .d-pad button {
-    background: var(--bg-subtle);
-    border: 1px solid var(--border-hi);
-    color: var(--text-primary);
-    font-family: inherit;
-    font-size: 14px;
-    cursor: pointer;
-  }
-  .d-pad button:hover { background: var(--border-hi); }
-  .boss-alert {
-    padding: 8px;
-    background: rgba(255, 42, 75, 0.1);
-    border: 1px solid var(--accent-crimson);
-    color: var(--accent-crimson);
-    font-size: 11px;
-    line-height: 1.4;
-    display: none;
-    margin-top: 8px;
-  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:var(--bg);color:var(--ink);font-family:'JetBrains Mono',monospace;height:100%;overflow:hidden;}
+  #app{display:flex;flex-direction:column;height:100vh;max-width:1440px;margin:0 auto;position:relative;}
+  header{background:linear-gradient(180deg,#0e1320,#090c14);border-bottom:1px solid var(--panel-border);padding:8px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:10;}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .sigil{width:22px;height:22px;border:1px solid var(--crimson);transform:rotate(45deg);position:relative;display:flex;align-items:center;justify-content:center;}
+  .sigil::after{content:'';width:10px;height:10px;background:var(--crimson);}
+  .title{font-size:13px;font-weight:800;letter-spacing:0.18em;color:#fff;}
+  .subtitle{font-size:9px;color:var(--dim);letter-spacing:0.12em;}
+  .stats-bar{display:flex;gap:14px;align-items:center;font-size:10px;}
+  .stat-pill{background:#06080d;border:1px solid var(--panel-border);padding:4px 8px;display:flex;gap:6px;}
+  .stat-label{color:var(--dim);}
+  .stat-val{color:var(--cyan);font-weight:700;}
+  .btn{background:var(--panel);border:1px solid var(--panel-border);color:var(--ink);font-family:inherit;font-size:10px;font-weight:700;letter-spacing:0.1em;padding:5px 10px;cursor:pointer;transition:all .15s;}
+  .btn:hover{border-color:var(--cyan);color:#fff;}
+  .btn-crimson{background:var(--crimson-dim);border-color:var(--crimson);color:#fff;}
+  .btn-crimson:hover{background:var(--crimson);box-shadow:0 0 12px rgba(255,43,78,.5);}
+  #viewport-wrap{flex:1;position:relative;display:flex;overflow:hidden;background:#000;}
+  #game-canvas{width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;display:block;}
+  #radar-panel{position:absolute;top:12px;right:12px;background:rgba(12,15,23,0.92);border:1px solid var(--panel-border);padding:8px;display:flex;flex-direction:column;gap:6px;width:160px;backdrop-filter:blur(4px);z-index:5;}
+  .panel-title{font-size:9px;font-weight:800;letter-spacing:0.15em;color:var(--dim);border-bottom:1px solid var(--panel-border);padding-bottom:3px;}
+  #radar-canvas{width:144px;height:108px;background:#05060a;border:1px solid #151a28;display:block;}
+  #telemetry{position:absolute;bottom:12px;left:12px;background:rgba(12,15,23,0.92);border:1px solid var(--panel-border);padding:8px 12px;font-size:9px;display:grid;grid-template-columns:auto auto;gap:4px 12px;backdrop-filter:blur(4px);z-index:5;}
+  .t-label{color:var(--dim);}
+  .t-val{color:var(--ink);font-weight:700;text-align:right;}
+  #dialog-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.75);display:none;align-items:center;justify-content:center;z-index:20;backdrop-filter:blur(2px);}
+  #dialog-card{background:var(--panel);border:2px solid var(--crimson);padding:20px;max-width:380px;width:90%;box-shadow:0 0 30px rgba(255,43,78,0.4);display:flex;flex-direction:column;gap:12px;}
+  .d-title{color:var(--crimson);font-size:12px;font-weight:800;letter-spacing:0.15em;}
+  .d-body{font-size:11px;color:var(--ink);line-height:1.5;}
+  .d-actions{display:flex;gap:8px;justify-content:flex-end;}
+  #dpad{position:absolute;bottom:16px;right:16px;display:grid;grid-template-columns:40px 40px 40px;grid-template-rows:40px 40px 40px;gap:4px;z-index:6;}
+  .d-btn{background:rgba(18,24,36,0.85);border:1px solid var(--panel-border);color:var(--cyan);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;user-select:none;}
+  .d-btn:active{background:var(--cyan);color:#000;}
+  #fps-meter{position:absolute;top:12px;left:12px;font-size:10px;color:var(--cyan);background:rgba(5,6,10,0.7);padding:2px 6px;border:1px solid var(--panel-border);z-index:5;}
 </style>
 </head>
 <body>
-
-<header>
-  <div class="title-group">
-    <span class="title-main">SILICON PURGATORY // DUNGEON FLOOR</span>
-    <span id="floorBadge" class="floor-badge">SECTOR 01 · SEED ARABELLA</span>
-  </div>
-  <div class="nav-group">
-    <input type="text" id="seedInput" value="arabella" style="background:var(--bg-subtle);border:1px solid var(--border-dim);color:var(--text-primary);padding:3px 6px;font-family:inherit;font-size:11px;width:75px;" />
-    <button id="regenBtn" class="btn">⟳ REGEN</button>
-    <button id="bossSanctumBtn" class="btn btn-boss">⚠️ BOSS SANCTUM</button>
-    <button id="testRewardBtn" class="btn" style="border-color:var(--accent-amber);color:var(--accent-amber);" title="Trigger Reward Loop hook directly">🎁 REWARD LOOP</button>
-    <a href="index.html" class="btn">⚔️ CYCLE ARENA</a>
-  </div>
-</header>
-
-<div class="layout-container">
-  <div class="viewport-panel">
-    <canvas id="dungeonCanvas" width="576" height="576"></canvas>
-    <div id="bossAlert" class="boss-alert">
-      <strong>⚠️ ANOMALY DETECTED: NULL COLOSSUS ACTIVE</strong><br/>
-      Multi-action Press-Turn Archon located in Sanctum Center. Engage or purge!
-    </div>
-  </div>
-
-  <div class="sidebar">
-    <div class="card">
-      <div class="card-title">TELEMETRY <span id="fpsCounter">60 FPS</span></div>
-      <div class="stat-grid">
-        <div class="stat-box"><div class="stat-lbl">POSITION</div><div id="posVal" class="stat-val">4,14</div></div>
-        <div class="stat-box"><div class="stat-lbl">SECTOR</div><div id="sectorVal" class="stat-val">01 / 06</div></div>
-        <div class="stat-box"><div class="stat-lbl">HOSTILES</div><div id="hostileVal" class="stat-val">4</div></div>
-        <div class="stat-box"><div class="stat-lbl">BOSS INTEGRITY</div><div id="bossHpVal" class="stat-val">360 / 360</div></div>
+<div id="app">
+  <header>
+    <div class="brand">
+      <div class="sigil"></div>
+      <div>
+        <div class="title">SILICON PURGATORY // DUNGEON FLOOR</div>
+        <div class="subtitle" id="floor-indicator">FLOOR 01 · SEED —</div>
       </div>
     </div>
+    <div class="stats-bar">
+      <div class="stat-pill"><span class="stat-label">SEED</span><span class="stat-val" id="seed-disp">DEMON-01</span></div>
+      <button class="btn" id="btn-regen">⟳ REGEN</button>
+      <button class="btn btn-crimson" id="btn-boss-toggle">⚡ BOSS CHAMBER</button>
+      <a href="index.html" class="btn btn-crimson" style="text-decoration:none;">⚔️ PRESS-TURN ARENA</a>
+    </div>
+  </header>
 
-    <div class="card">
-      <div class="card-title">TACTICAL PROPULSION</div>
-      <div class="d-pad">
-        <div></div><button id="btnUp">▲</button><div></div>
-        <button id="btnLeft">◄</button><div></div><button id="btnRight">►</button>
-        <div></div><button id="btnDown">▼</button><div></div>
-      </div>
+  <div id="viewport-wrap">
+    <div id="fps-meter">60 FPS</div>
+    <canvas id="game-canvas"></canvas>
+    
+    <div id="radar-panel">
+      <div class="panel-title">FLOOR RADAR</div>
+      <canvas id="radar-canvas" width="144" height="108"></canvas>
     </div>
 
-    <div class="card">
-      <div class="card-title">BESTIARY & RESISTANCES</div>
-      <div style="font-size:11px;color:var(--text-dim);line-height:1.6;" id="bestiaryList">
-        • DAEMON SENTINEL (Weak: Cold)<br/>
-        • PYRO CLOCKER (Weak: Cold)<br/>
-        • CRYO DRIFTER (Weak: Heat)<br/>
-        • NULL COLOSSUS [BOSS] (Weak: Heat)
+    <div id="telemetry">
+      <div class="panel-title" style="grid-column:span 2;border:none;padding:0;">TELEMETRY</div>
+      <span class="t-label">POSITION</span><span class="t-val" id="t-pos">0,0</span>
+      <span class="t-label">ROOMS</span><span class="t-val" id="t-rooms">0 / 0</span>
+      <span class="t-label">HOSTILES</span><span class="t-val" id="t-hostiles">0</span>
+      <span class="t-label">CLEARED</span><span class="t-val" id="t-cleared">0%</span>
+      <span class="t-label">MODE</span><span class="t-val" id="t-mode" style="color:var(--gold);">NORMAL</span>
+    </div>
+
+    <div id="dpad">
+      <div></div><div class="d-btn" id="d-up">▲</div><div></div>
+      <div class="d-btn" id="d-left">◄</div><div></div><div class="d-btn" id="d-right">►</div>
+      <div></div><div class="d-btn" id="d-down">▼</div><div></div>
+    </div>
+
+    <div id="dialog-overlay">
+      <div id="dialog-card">
+        <div class="d-title" id="d-title">! ENCOUNTER !</div>
+        <div class="d-body" id="d-body">DAEMON HOSTILE ENGAGED.</div>
+        <div class="d-actions">
+          <button class="btn" id="d-flee">DISENGAGE</button>
+          <button class="btn btn-crimson" id="d-battle">ENGAGE COMBAT</button>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Scripts -->
 <script src="boss.js"></script>
-<script src="rewards.js"></script>
 <script>
-  (function() {
-    'use strict';
-    var canvas = document.getElementById('dungeonCanvas');
-    var ctx = canvas.getContext('2d');
-    var posVal = document.getElementById('posVal');
-    var sectorVal = document.getElementById('sectorVal');
-    var hostileVal = document.getElementById('hostileVal');
-    var bossHpVal = document.getElementById('bossHpVal');
-    var bossAlert = document.getElementById('bossAlert');
-    var fpsCounter = document.getElementById('fpsCounter');
-    var floorBadge = document.getElementById('floorBadge');
+(function(){
+  'use strict';
+  var TILE = 16;
+  var SCALE = 3;
+  var MAP_W = 48;
+  var MAP_H = 36;
+  var WALL = 0;
+  var FLOOR = 1;
+  var DOOR = 2;
 
-    var TILE = 24;
-    var COLS = 24;
-    var ROWS = 24;
+  var canvas = document.getElementById('game-canvas');
+  var ctx = canvas.getContext('2d');
+  var radarC = document.getElementById('radar-canvas');
+  var radarCtx = radarC.getContext('2d');
+  var fpsDisp = document.getElementById('fps-meter');
 
-    var state = {
-      player: { x: 4, y: 14 },
-      boss: null,
-      isBossFloor: false,
-      hostiles: [],
-      grid: [],
-      lastTime: performance.now(),
-      frames: 0,
-      fps: 60
+  var isBossMode = false;
+  var currentSeed = 'DEMON-' + Math.floor(Math.random()*9000 + 1000);
+  var floorGrid = [];
+  var rooms = [];
+  var hostiles = [];
+  var player = { gx: 24, gy: 18, rx: 24 * TILE * SCALE, ry: 18 * TILE * SCALE, moving: false, dir: 's' };
+
+  function mulberry32(a) {
+    return function() {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
     };
+  }
 
-    function triggerBossVictory() {
-      if (window.SiliconRewards && window.SiliconRewards.trigger) {
-        window.SiliconRewards.trigger(state.boss || { name: 'NULL COLOSSUS' }, function() {
-          window.location.href = 'index.html';
-        }, function() {
-          window.location.href = 'index.html?mode=fusion';
-        });
-      } else {
-        alert('VICTORY: Boss Defeated! Return gate active.');
-      }
+  function hashSeed(s) {
+    var h = 1779033703 ^ s.length;
+    for (var i = 0; i < s.length; i++) {
+      h = Math.imul(h ^ s.charCodeAt(i), 3432918353);
+      h = h << 13 | h >>> 19;
     }
+    return (h ^ h >>> 16) >>> 0;
+  }
 
-    function initNormalFloor(seed) {
-      state.isBossFloor = false;
-      bossAlert.style.display = 'none';
-      floorBadge.textContent = 'SECTOR 01 · SEED ' + seed.toUpperCase();
-      sectorVal.textContent = '01 / 06';
-      state.grid = [];
-      for (var y = 0; y < ROWS; y++) {
-        var row = [];
-        for (var x = 0; x < COLS; x++) {
-          var isBorder = (x === 0 || x === COLS - 1 || y === 0 || y === ROWS - 1);
-          var isObstacle = (x % 5 === 0 && y % 5 === 0);
-          row.push((isBorder || isObstacle) ? 1 : 0);
+  function initNormalDungeon(seed) {
+    var rng = mulberry32(hashSeed(seed));
+    floorGrid = [];
+    for (var y = 0; y < MAP_H; y++) {
+      floorGrid[y] = new Array(MAP_W).fill(WALL);
+    }
+    rooms = [];
+    var roomCount = 6;
+    for (var r = 0; r < roomCount; r++) {
+      var rw = Math.floor(rng() * 5 + 6);
+      var rh = Math.floor(rng() * 5 + 5);
+      var rx = Math.floor(rng() * (MAP_W - rw - 4) + 2);
+      var ry = Math.floor(rng() * (MAP_H - rh - 4) + 2);
+      var rm = { x: rx, y: ry, w: rw, h: rh, cx: Math.floor(rx + rw/2), cy: Math.floor(ry + rh/2), discovered: r === 0 };
+      rooms.push(rm);
+      for (var y1 = ry; y1 < ry + rh; y1++) {
+        for (var x1 = rx; x1 < rx + rw; x1++) {
+          floorGrid[y1][x1] = FLOOR;
         }
-        state.grid.push(row);
       }
-      state.player = { x: 4, y: 14 };
-      state.hostiles = [
-        { x: 8, y: 8, name: 'DAEMON SENTINEL', hp: 120 },
-        { x: 16, y: 6, name: 'PYRO CLOCKER', hp: 90 },
-        { x: 18, y: 18, name: 'CRYO DRIFTER', hp: 95 },
-        { x: 6, y: 18, name: 'SPARK HARVESTER', hp: 100 }
-      ];
-      state.boss = null;
-      updateUI();
-    }
-
-    function initBossSanctumFloor() {
-      state.isBossFloor = true;
-      bossAlert.style.display = 'block';
-      floorBadge.textContent = 'SECTOR 06 · SANCTUM [BOSS]';
-      sectorVal.textContent = '06 / 06';
-      
-      // Build boss sanctum from boss.js if available
-      if (window.SiliconBoss && window.SiliconBoss.buildSanctum) {
-        var sanctum = window.SiliconBoss.buildSanctum(COLS, ROWS, 'boss');
-        state.grid = sanctum.cells;
-        state.player = { x: sanctum.playerSpawn.x, y: sanctum.playerSpawn.y };
-        state.boss = window.SiliconBoss.create('boss');
-        state.boss.x = sanctum.bossSpawn.x;
-        state.boss.y = sanctum.bossSpawn.y;
-      } else {
-        // Fallback boss arena
-        state.grid = [];
-        for (var y = 0; y < ROWS; y++) {
-          var r = [];
-          for (var x = 0; x < COLS; x++) {
-            r.push((x < 2 || x >= COLS - 2 || y < 2 || y >= ROWS - 2) ? 1 : 0);
-          }
-          state.grid.push(r);
+      if (r > 0) {
+        var prev = rooms[r - 1];
+        var cx = prev.cx, cy = prev.cy;
+        while (cx !== rm.cx) {
+          floorGrid[cy][cx] = FLOOR;
+          cx += (rm.cx > cx ? 1 : -1);
         }
-        state.player = { x: 12, y: 18 };
-        state.boss = { x: 12, y: 8, name: 'NULL COLOSSUS', integrity: 360, maxIntegrity: 360, pressTurns: 2 };
-      }
-      state.hostiles = [];
-      updateUI();
-    }
-
-    function updateUI() {
-      posVal.textContent = state.player.x + ',' + state.player.y;
-      hostileVal.textContent = state.isBossFloor ? (state.boss ? '1 [BOSS]' : '0') : state.hostiles.length;
-      if (state.boss) {
-        bossHpVal.textContent = state.boss.integrity + ' / ' + state.boss.maxIntegrity;
-      } else {
-        bossHpVal.textContent = 'N/A';
-      }
-    }
-
-    function tryMove(dx, dy) {
-      var nx = state.player.x + dx;
-      var ny = state.player.y + dy;
-      if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS) {
-        if (state.grid[ny][nx] === 0) {
-          state.player.x = nx;
-          state.player.y = ny;
-          
-          // Check collision with Boss
-          if (state.isBossFloor && state.boss && Math.abs(state.player.x - state.boss.x) <= 1 && Math.abs(state.player.y - state.boss.y) <= 1) {
-            triggerBossVictory();
-            return;
-          }
-          // Check collision with hostiles
-          for (var i = 0; i < state.hostiles.length; i++) {
-            if (state.hostiles[i].x === nx && state.hostiles[i].y === ny) {
-              window.location.href = 'index.html?encounter=' + encodeURIComponent(state.hostiles[i].name);
-              return;
-            }
-          }
-          updateUI();
+        while (cy !== rm.cy) {
+          floorGrid[cy][cx] = FLOOR;
+          cy += (rm.cy > cy ? 1 : -1);
         }
       }
     }
+    player.gx = rooms[0].cx;
+    player.gy = rooms[0].cy;
+    player.rx = player.gx * TILE * SCALE;
+    player.ry = player.gy * TILE * SCALE;
 
-    // Input handlers
-    window.addEventListener('keydown', function(e) {
-      if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') tryMove(0, -1);
-      if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') tryMove(0, 1);
-      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') tryMove(-1, 0);
-      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') tryMove(1, 0);
+    hostiles = [];
+    for (var h = 1; h < rooms.length; h++) {
+      var rmH = rooms[h];
+      hostiles.push({
+        type: { name: 'VOID STALKER', col: '#ff2b4e', col2: '#7a1226', glow: '#ff6b7e' },
+        room: rmH,
+        gx: rmH.cx,
+        gy: rmH.cy,
+        rx: rmH.cx * TILE * SCALE,
+        ry: rmH.cy * TILE * SCALE,
+        moving: false,
+        timer: 0
+      });
+    }
+    document.getElementById('t-mode').textContent = 'STANDARD';
+    document.getElementById('t-mode').style.color = 'var(--cyan)';
+    document.getElementById('floor-indicator').textContent = 'FLOOR 01 · PATROL SECTOR';
+  }
+
+  function initBossDungeon(seed) {
+    if (!window.BossModule) {
+      initNormalDungeon(seed);
+      return;
+    }
+    var floorData = window.BossModule.generateBossFloor(seed, MAP_W, MAP_H);
+    floorGrid = floorData.grid;
+    rooms = floorData.rooms;
+    player.gx = floorData.playerSpawn.x;
+    player.gy = floorData.playerSpawn.y;
+    player.rx = player.gx * TILE * SCALE;
+    player.ry = player.gy * TILE * SCALE;
+
+    hostiles = [floorData.bossEntity].concat(floorData.minions);
+    document.getElementById('t-mode').textContent = 'BOSS SANCTUM';
+    document.getElementById('t-mode').style.color = 'var(--crimson)';
+    document.getElementById('floor-indicator').textContent = 'FLOOR 66 // PRIME BOSS CHAMBER';
+  }
+
+  function regen(seed) {
+    currentSeed = seed || ('DEMON-' + Math.floor(Math.random()*9000 + 1000));
+    document.getElementById('seed-disp').textContent = currentSeed;
+    if (isBossMode) {
+      initBossDungeon(currentSeed);
+    } else {
+      initNormalDungeon(currentSeed);
+    }
+    updateTelemetry();
+  }
+
+  function resizeCanvas() {
+    canvas.width = canvas.parentElement.clientWidth;
+    canvas.height = canvas.parentElement.clientHeight;
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  function movePlayer(dx, dy) {
+    var nx = player.gx + dx;
+    var ny = player.gy + dy;
+    if (nx < 0 || nx >= MAP_W || ny < 0 || ny >= MAP_H) return;
+    if (floorGrid[ny][nx] === WALL) return;
+    player.gx = nx;
+    player.gy = ny;
+    rooms.forEach(function(rm){
+      if (nx >= rm.x && nx < rm.x + rm.w && ny >= rm.y && ny < rm.y + rm.h) {
+        rm.discovered = true;
+      }
+    });
+    checkEncounters();
+    updateTelemetry();
+  }
+
+  function checkEncounters() {
+    for (var i = 0; i < hostiles.length; i++) {
+      var h = hostiles[i];
+      if (Math.abs(h.gx - player.gx) <= 1 && Math.abs(h.gy - player.gy) <= 1) {
+        triggerEncounter(h);
+        break;
+      }
+    }
+  }
+
+  function triggerEncounter(h) {
+    var dialog = document.getElementById('dialog-overlay');
+    var dTitle = document.getElementById('d-title');
+    var dBody = document.getElementById('d-body');
+    if (h.isBoss) {
+      dTitle.textContent = '⚠️ CRITICAL ALERT // APEX DAEMON DETECTED';
+      dTitle.style.color = 'var(--crimson)';
+      dBody.innerHTML = '<strong>' + (h.type.name || 'APOSTLE OF ZERO') + '</strong><br/>' +
+        (h.type.title || 'ARCH-DAEMON PRIME COGNITION') + '<br/>HP: ' + h.type.hp + ' / ' + h.type.maxHp +
+        ' · Multi-Turn Boss Encounter';
+    } else {
+      dTitle.textContent = '! ENCOUNTER !';
+      dTitle.style.color = 'var(--gold)';
+      dBody.innerHTML = 'Hostile unit: <strong>' + (h.type.name || 'SANCTUM WARDEN') + '</strong>';
+    }
+    dialog.style.display = 'flex';
+  }
+
+  document.getElementById('d-flee').onclick = function(){
+    document.getElementById('dialog-overlay').style.display = 'none';
+    player.gx = Math.max(1, player.gx - 1);
+    player.gy = Math.max(1, player.gy + 1);
+  };
+  document.getElementById('d-battle').onclick = function(){
+    window.location.href = 'index.html';
+  };
+
+  document.getElementById('btn-regen').onclick = function(){
+    regen();
+  };
+  document.getElementById('btn-boss-toggle').onclick = function(){
+    isBossMode = !isBossMode;
+    this.textContent = isBossMode ? '⚡ STANDARD FLOOR' : '⚡ BOSS CHAMBER';
+    regen(currentSeed);
+  };
+
+  window.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') movePlayer(0, -1);
+    if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') movePlayer(0, 1);
+    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') movePlayer(-1, 0);
+    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') movePlayer(1, 0);
+  });
+
+  document.getElementById('d-up').onclick = function(){ movePlayer(0, -1); };
+  document.getElementById('d-down').onclick = function(){ movePlayer(0, 1); };
+  document.getElementById('d-left').onclick = function(){ movePlayer(-1, 0); };
+  document.getElementById('d-right').onclick = function(){ movePlayer(1, 0); };
+
+  function updateTelemetry() {
+    document.getElementById('t-pos').textContent = player.gx + ',' + player.gy;
+    var disc = rooms.filter(function(r){ return r.discovered; }).length;
+    document.getElementById('t-rooms').textContent = disc + ' / ' + rooms.length;
+    document.getElementById('t-hostiles').textContent = hostiles.length;
+    var clearedPct = Math.round((disc / Math.max(1, rooms.length)) * 100);
+    document.getElementById('t-cleared').textContent = clearedPct + '%';
+  }
+
+  var lastT = performance.now();
+  var frames = 0;
+  var fps = 60;
+
+  function render() {
+    var now = performance.now();
+    frames++;
+    if (now - lastT >= 1000) {
+      fps = Math.round((frames * 1000) / (now - lastT));
+      fpsDisp.textContent = fps + ' FPS';
+      frames = 0;
+      lastT = now;
+    }
+
+    player.rx += (player.gx * TILE * SCALE - player.rx) * 0.2;
+    player.ry += (player.gy * TILE * SCALE - player.ry) * 0.2;
+
+    ctx.fillStyle = '#05060a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    var camX = Math.round(canvas.width / 2 - player.rx);
+    var camY = Math.round(canvas.height / 2 - player.ry);
+
+    var ts = TILE * SCALE;
+    for (var y = 0; y < MAP_H; y++) {
+      for (var x = 0; x < MAP_W; x++) {
+        var screenX = camX + x * ts;
+        var screenY = camY + y * ts;
+        if (screenX + ts < 0 || screenX > canvas.width || screenY + ts < 0 || screenY > canvas.height) continue;
+
+        var tile = floorGrid[y][x];
+        if (tile === WALL) {
+          ctx.fillStyle = '#101524';
+          ctx.fillRect(screenX, screenY, ts, ts);
+          ctx.strokeStyle = '#182038';
+          ctx.strokeRect(screenX, screenY, ts, ts);
+        } else if (tile === FLOOR) {
+          ctx.fillStyle = '#080c16';
+          ctx.fillRect(screenX, screenY, ts, ts);
+          ctx.fillStyle = '#0d1322';
+          ctx.fillRect(screenX + 2, screenY + 2, ts - 4, ts - 4);
+        } else if (tile === DOOR) {
+          ctx.fillStyle = '#ffc14d';
+          ctx.fillRect(screenX, screenY, ts, ts);
+        }
+      }
+    }
+
+    hostiles.forEach(function(h){
+      var hx = camX + h.gx * ts;
+      var hy = camY + h.gy * ts;
+      if (h.isBoss) {
+        ctx.fillStyle = 'rgba(255,0,51,0.25)';
+        ctx.beginPath();
+        ctx.arc(hx + ts/2, hy + ts/2, ts, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ff0033';
+        ctx.fillRect(hx + 4, hy + 4, ts - 8, ts - 8);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(hx + 12, hy + 12, 6, 6);
+        ctx.fillRect(hx + ts - 18, hy + 12, 6, 6);
+      } else {
+        ctx.fillStyle = h.type.col || '#ff2b4e';
+        ctx.fillRect(hx + 8, hy + 8, ts - 16, ts - 16);
+      }
     });
 
-    document.getElementById('btnUp').onclick = function() { tryMove(0, -1); };
-    document.getElementById('btnDown').onclick = function() { tryMove(0, 1); };
-    document.getElementById('btnLeft').onclick = function() { tryMove(-1, 0); };
-    document.getElementById('btnRight').onclick = function() { tryMove(1, 0); };
-    document.getElementById('regenBtn').onclick = function() {
-      var s = document.getElementById('seedInput').value || 'arabella';
-      initNormalFloor(s);
-    };
-    document.getElementById('bossSanctumBtn').onclick = function() {
-      initBossSanctumFloor();
-    };
-    document.getElementById('testRewardBtn').onclick = function() {
-      triggerBossVictory();
-    };
+    var px = camX + player.rx;
+    var py = camY + player.ry;
+    ctx.fillStyle = '#49e2ff';
+    ctx.fillRect(px + 8, py + 8, ts - 16, ts - 16);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(px + 14, py + 14, 4, 4);
+    ctx.fillRect(px + ts - 18, py + 14, 4, 4);
 
-    // Render loop
-    function render(now) {
-      state.frames++;
-      if (now - state.lastTime >= 1000) {
-        state.fps = Math.round((state.frames * 1000) / (now - state.lastTime));
-        fpsCounter.textContent = state.fps + ' FPS';
-        state.frames = 0;
-        state.lastTime = now;
-      }
+    drawRadar();
+    requestAnimationFrame(render);
+  }
 
-      ctx.fillStyle = '#050608';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+  function drawRadar() {
+    radarCtx.fillStyle = '#05060a';
+    radarCtx.fillRect(0, 0, 144, 108);
+    var rw = 144 / MAP_W;
+    var rh = 108 / MAP_H;
 
-      // Draw grid
-      for (var y = 0; y < ROWS; y++) {
-        for (var x = 0; x < COLS; x++) {
-          var cell = state.grid[y] ? state.grid[y][x] : 0;
-          if (cell === 1) {
-            ctx.fillStyle = state.isBossFloor ? '#3b1219' : '#111827';
-            ctx.fillRect(x * TILE, y * TILE, TILE - 1, TILE - 1);
-            ctx.strokeStyle = state.isBossFloor ? '#ff2a4b' : '#1f2937';
-            ctx.strokeRect(x * TILE, y * TILE, TILE - 1, TILE - 1);
-          } else {
-            ctx.fillStyle = '#0a0d14';
-            ctx.fillRect(x * TILE, y * TILE, TILE - 1, TILE - 1);
-          }
+    for (var y = 0; y < MAP_H; y++) {
+      for (var x = 0; x < MAP_W; x++) {
+        if (floorGrid[y][x] === FLOOR) {
+          radarCtx.fillStyle = '#162238';
+          radarCtx.fillRect(x * rw, y * rh, rw, rh);
         }
       }
-
-      // Draw Hostiles
-      ctx.fillStyle = '#f59e0b';
-      for (var i = 0; i < state.hostiles.length; i++) {
-        var h = state.hostiles[i];
-        ctx.fillRect(h.x * TILE + 4, h.y * TILE + 4, TILE - 8, TILE - 8);
-      }
-
-      // Draw Boss in Sanctum
-      if (state.isBossFloor && state.boss) {
-        ctx.fillStyle = '#ff2a4b';
-        ctx.fillRect((state.boss.x - 1) * TILE, (state.boss.y - 1) * TILE, TILE * 3, TILE * 3);
-        ctx.strokeStyle = '#f59e0b';
-        ctx.lineWidth = 2;
-        ctx.strokeRect((state.boss.x - 1) * TILE, (state.boss.y - 1) * TILE, TILE * 3, TILE * 3);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 9px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('ARCHON', state.boss.x * TILE + TILE / 2, state.boss.y * TILE + 4);
-      }
-
-      // Draw Player
-      ctx.fillStyle = '#06b6d4';
-      ctx.fillRect(state.player.x * TILE + 2, state.player.y * TILE + 2, TILE - 4, TILE - 4);
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(state.player.x * TILE + 2, state.player.y * TILE + 2, TILE - 4, TILE - 4);
-
-      requestAnimationFrame(render);
     }
 
-    // Check URL params
-    var urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('floor') === 'boss' || urlParams.get('sector') === '06') {
-      initBossSanctumFloor();
-    } else {
-      initNormalFloor('arabella');
-    }
+    hostiles.forEach(function(h){
+      radarCtx.fillStyle = h.isBoss ? '#ff0033' : '#ff4d6d';
+      radarCtx.fillRect(h.gx * rw - 1, h.gy * rh - 1, h.isBoss ? 4 : 2, h.isBoss ? 4 : 2);
+    });
 
-    requestAnimationFrame(render);
-  })();
+    radarCtx.fillStyle = '#49e2ff';
+    radarCtx.fillRect(player.gx * rw - 1, player.gy * rh - 1, 3, 3);
+  }
+
+  isBossMode = true;
+  regen('BOSS-INIT-01');
+  requestAnimationFrame(render);
+})();
 </script>
 </body>
 </html>
