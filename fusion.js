@@ -223,11 +223,36 @@
 
   function preview(a, b) {
     if (!canFuse(a, b)) return null;
-    return resolveFusion(resolve(a), resolve(b));
+    var res = resolveFusion(resolve(a), resolve(b));
+    if (!res) return null;
+    
+    // Check cipher key progression gate for Tier 3+ entities
+    var hasKey = false;
+    var maxTier = 2;
+    if (typeof window !== 'undefined' && window.SiliconRewards) {
+      if (typeof window.SiliconRewards.hasCipherKey === 'function') {
+        hasKey = window.SiliconRewards.hasCipherKey();
+      }
+      if (typeof window.SiliconRewards.unlockedTier === 'function') {
+        maxTier = window.SiliconRewards.unlockedTier();
+      }
+    }
+    
+    if ((res.tier || 1) > maxTier || ((res.tier || 1) >= 3 && !hasKey)) {
+      res.isLocked = true;
+      res.lockReason = 'REQUIRES ARCHON CIPHER KEY (FOUND IN BOSS SANCTUM)';
+    } else {
+      res.isLocked = false;
+    }
+    return res;
   }
 
   function fuse(a, b) {
     if (!canFuse(a, b)) return null;
+    var prev = preview(a, b);
+    if (prev && prev.isLocked) {
+      return null;
+    }
     return clone(resolveFusion(resolve(a), resolve(b)));
   }
 

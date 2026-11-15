@@ -70,6 +70,8 @@
   .roster-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px;border:1px solid var(--line);background:#070a0f;padding:8px 12px;border-radius:8px;}
   .roster-chip{display:inline-flex;align-items:center;gap:6px;background:#0f1722;border:1px solid #1e2d3d;padding:4px 8px;border-radius:4px;font-size:10px;color:#cbd5e1}
   .roster-chip b{color:#38bdf8}
+  .souls-hud{display:inline-flex;align-items:center;gap:6px;background:#0d1824;border:1px solid #0284c7;padding:3px 8px;border-radius:4px;font-size:10px;color:#38bdf8;font-weight:700;letter-spacing:1px}
+  .souls-hud b{color:#bae6fd}
   .fusion-modal{position:fixed;inset:0;z-index:70;background:rgba(4,6,10,.92);display:none;align-items:center;justify-content:center;padding:16px;}
   .fusion-modal.open{display:flex}
   .fusion-panel{background:#090d14;border:2px solid var(--purple);border-radius:12px;padding:18px;max-width:560px;width:100%;box-shadow:0 0 30px rgba(168,85,247,.3);display:flex;flex-direction:column;gap:12px;}
@@ -81,7 +83,10 @@
   .f-preview h4{color:#f3e8ff;font-size:13px;letter-spacing:1px;margin-bottom:4px;}
   .f-preview p{font-size:10px;color:var(--dim);line-height:1.5;}
   .f-actions{display:flex;gap:8px;justify-content:flex-end;}
+  .badge-locked{display:inline-block;background:#3b0764;border:1px solid #a855f7;color:#f3e8ff;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:800;letter-spacing:1px;margin-bottom:6px}
+  .badge-unlocked{display:inline-block;background:#064e3b;border:1px solid #10b981;color:#a7f3d0;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:800;letter-spacing:1px;margin-bottom:6px}
 </style>
+<script src="rewards.js"></script>
 <script src="negotiate.js"></script>
 <script src="fusion.js"></script>
 </head>
@@ -100,6 +105,7 @@
   <div class="roster-bar" id="rosterBar">
     <span class="tag" style="color:var(--purple)">PACT ROSTER [2/8]:</span>
     <div id="rosterChips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    <div class="souls-hud" id="soulsHud" title="Soul fragments recovered from Sector Bosses">SOULS: <b id="soulCount">0</b></div>
     <span class="tag" style="margin-left:auto" id="fpsCounter">FPS: 60</span>
   </div>
 
@@ -162,6 +168,7 @@
       </div>
     </div>
     <div class="f-preview" id="fusionPreviewBox">
+      <div id="fuseTierBadge" style="display:none"></div>
       <h4 id="fuseResultName">— SELECT DEMONS —</h4>
       <p id="fuseResultStats">Awaiting fusion synthesis calculation...</p>
       <div id="fuseResultAff" class="aff"></div>
@@ -188,6 +195,17 @@ function fpsLoop(){
   requestAnimationFrame(fpsLoop);
 }
 requestAnimationFrame(fpsLoop);
+
+/* ===== Soul Fragment HUD helper ===== */
+function updateSoulHud(){
+  const countEl = document.getElementById('soulCount');
+  if(!countEl) return;
+  let souls = 0;
+  if(window.SiliconRewards && typeof window.SiliconRewards.getSoulFragments === 'function'){
+    souls = window.SiliconRewards.getSoulFragments();
+  }
+  countEl.textContent = souls;
+}
 
 /* ===== shared roster w/ affinities (ids match dungeon.html) ===== */
 const ELEMENTS=['kinetic','thermal','cryo','volt','void'];
@@ -217,6 +235,7 @@ function updateRosterUI(){
     bar.insertAdjacentHTML('beforeend', '<div class="roster-chip"><b>T'+(d.tier||1)+'</b> '+d.name+'</div>');
   });
   document.getElementById('rosterBar').querySelector('.tag').textContent = 'PACT ROSTER ['+PACT_ROSTER.length+'/8]:';
+  updateSoulHud();
 }
 
 const HERO={name:'CAIRN-FRAME',hp:110,sp:70,atk:17,aff:{void:'weak'}};
@@ -411,11 +430,15 @@ function updateFusionPreview(){
   const nameEl = document.getElementById('fuseResultName');
   const statsEl = document.getElementById('fuseResultStats');
   const affBox = document.getElementById('fuseResultAff');
+  const badgeEl = document.getElementById('fuseTierBadge');
+  const execBtn = document.getElementById('execFuseBtn');
   affBox.innerHTML = '';
+  if(badgeEl) badgeEl.style.display = 'none';
 
   if(isNaN(idxA) || isNaN(idxB) || !PACT_ROSTER[idxA] || !PACT_ROSTER[idxB]){
     nameEl.textContent = '— NO VALID VESSELS —';
     statsEl.textContent = 'Recruit demons via negotiation or select distinct candidates.';
+    if(execBtn) execBtn.disabled = true;
     return;
   }
   
@@ -425,8 +448,25 @@ function updateFusionPreview(){
   if(window.DemonFusion && window.DemonFusion.preview){
     const result = window.DemonFusion.preview(dA, dB);
     if(result){
+      if(badgeEl){
+        badgeEl.style.display = 'inline-block';
+        if(result.isLocked){
+          badgeEl.className = 'badge-locked';
+          badgeEl.textContent = '🔒 RECIPE TIER ' + (result.tier||3) + ' LOCKED: ARCHON CIPHER KEY REQUIRED';
+        } else {
+          badgeEl.className = 'badge-unlocked';
+          badgeEl.textContent = '🔓 RECIPE TIER ' + (result.tier||1) + ' UNLOCKED';
+        }
+      }
+      
       nameEl.innerHTML = '<b style="color:'+(result.col||'#c084fc')+'">'+result.name+' [TIER '+(result.tier||2)+']</b>';
-      statsEl.innerHTML = 'HP: <b>'+result.hp+'</b> · SP: <b>'+result.sp+'</b> · ATK: <b>'+result.atk+'</b><br><small style="color:var(--dim)">'+result.lore+'</small>';
+      if(result.isLocked){
+        statsEl.innerHTML = '<span style="color:var(--crimson);font-weight:700">'+result.lockReason+'</span><br><small style="color:var(--dim)">Defeat Null Colossus in Boss Sanctum to extract the Archon Cipher Key.</small>';
+        if(execBtn) execBtn.disabled = true;
+      } else {
+        statsEl.innerHTML = 'HP: <b>'+result.hp+'</b> · SP: <b>'+result.sp+'</b> · ATK: <b>'+result.atk+'</b><br><small style="color:var(--dim)">'+result.lore+'</small>';
+        if(execBtn) execBtn.disabled = false;
+      }
       if(result.aff){
         for(const el of ELEMENTS){
           const a = result.aff[el];
@@ -441,6 +481,7 @@ function updateFusionPreview(){
   }
   nameEl.textContent = 'FUSION PREVIEW OFFLINE';
   statsEl.textContent = 'DemonFusion module not loaded.';
+  if(execBtn) execBtn.disabled = true;
 }
 
 function executeFusion(){
@@ -456,7 +497,7 @@ function executeFusion(){
   const fused = window.DemonFusion.fuse(dA, dB);
   
   if(!fused){
-    alert('Fusion synthesis failed.');
+    alert('Fusion synthesis failed or recipe tier is cipher-locked.');
     return;
   }
 
@@ -477,6 +518,9 @@ function executeFusion(){
 }
 
 /* ===== boot ===== */
+if(window.location.search.indexOf('mode=fusion') !== -1){
+  setTimeout(openFusionModal, 200);
+}
 for(const el of ELEMENTS)if(E.aff[el]==='weak'){/* hidden until discovered */}
 renderAff();updateBars();startHeroTurn();
 log('Hostile process <b>'+E.name+'</b> materialized from seed <b>'+seed+'</b>.','c');
