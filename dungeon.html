@@ -23,7 +23,7 @@
   .sigil::after{content:'';width:10px;height:10px;background:var(--crimson);}
   .title{font-size:13px;font-weight:800;letter-spacing:0.18em;color:#fff;}
   .subtitle{font-size:9px;color:var(--dim);letter-spacing:0.12em;}
-  .stats-bar{display:flex;gap:14px;align-items:center;font-size:10px;}
+  .stats-bar{display:flex;gap:10px;align-items:center;font-size:10px;}
   .stat-pill{background:#06080d;border:1px solid var(--panel-border);padding:4px 8px;display:flex;gap:6px;}
   .stat-label{color:var(--dim);}
   .stat-val{color:var(--cyan);font-weight:700;}
@@ -36,11 +36,17 @@
   #radar-panel{position:absolute;top:12px;right:12px;background:rgba(12,15,23,0.92);border:1px solid var(--panel-border);padding:8px;display:flex;flex-direction:column;gap:6px;width:160px;backdrop-filter:blur(4px);z-index:5;}
   .panel-title{font-size:9px;font-weight:800;letter-spacing:0.15em;color:var(--dim);border-bottom:1px solid var(--panel-border);padding-bottom:3px;}
   #radar-canvas{width:144px;height:108px;background:#05060a;border:1px solid #151a28;display:block;}
+  
+  /* Abyss Leyline Banner */
+  #leyline-banner{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:rgba(12,15,23,0.92);border:1px solid var(--crimson);padding:6px 14px;font-size:9px;letter-spacing:0.12em;display:flex;gap:10px;align-items:center;z-index:5;backdrop-filter:blur(4px);box-shadow:0 0 14px rgba(255,43,78,0.25);}
+  #leyline-tag{font-weight:800;color:var(--crimson);}
+  #leyline-desc{color:var(--ink);font-size:8.5px;}
+
   #telemetry{position:absolute;bottom:12px;left:12px;background:rgba(12,15,23,0.92);border:1px solid var(--panel-border);padding:8px 12px;font-size:9px;display:grid;grid-template-columns:auto auto;gap:4px 12px;backdrop-filter:blur(4px);z-index:5;}
   .t-label{color:var(--dim);}
   .t-val{color:var(--ink);font-weight:700;text-align:right;}
   #dialog-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.75);display:none;align-items:center;justify-content:center;z-index:20;backdrop-filter:blur(2px);}
-  #dialog-card{background:var(--panel);border:2px solid var(--crimson);padding:20px;max-width:380px;width:90%;box-shadow:0 0 30px rgba(255,43,78,0.4);display:flex;flex-direction:column;gap:12px;}
+  #dialog-card{background:var(--panel);border:2px solid var(--crimson);padding:20px;max-width:400px;width:90%;box-shadow:0 0 30px rgba(255,43,78,0.4);display:flex;flex-direction:column;gap:12px;}
   .d-title{color:var(--crimson);font-size:12px;font-weight:800;letter-spacing:0.15em;}
   .d-body{font-size:11px;color:var(--ink);line-height:1.5;}
   .d-actions{display:flex;gap:8px;justify-content:flex-end;}
@@ -61,15 +67,23 @@
       </div>
     </div>
     <div class="stats-bar">
+      <div class="stat-pill"><span class="stat-label">FLOOR</span><span class="stat-val" id="floor-disp">05</span></div>
       <div class="stat-pill"><span class="stat-label">SEED</span><span class="stat-val" id="seed-disp">DEMON-01</span></div>
+      <button class="btn" id="btn-next-floor">NEXT FLOOR ▶</button>
       <button class="btn" id="btn-regen">⟳ REGEN</button>
       <button class="btn btn-crimson" id="btn-boss-toggle">⚡ BOSS CHAMBER</button>
-      <a href="index.html" class="btn btn-crimson" style="text-decoration:none;">⚔️ PRESS-TURN ARENA</a>
+      <a href="index.html" class="btn btn-crimson" style="text-decoration:none;">⚔️ ARENA</a>
     </div>
   </header>
 
   <div id="viewport-wrap">
     <div id="fps-meter">60 FPS</div>
+    
+    <div id="leyline-banner">
+      <span id="leyline-tag">LEYLINE: CALM</span>
+      <span id="leyline-desc">No anomalous environmental interference.</span>
+    </div>
+
     <canvas id="game-canvas"></canvas>
     
     <div id="radar-panel">
@@ -84,6 +98,7 @@
       <span class="t-label">HOSTILES</span><span class="t-val" id="t-hostiles">0</span>
       <span class="t-label">CLEARED</span><span class="t-val" id="t-cleared">0%</span>
       <span class="t-label">MODE</span><span class="t-val" id="t-mode" style="color:var(--gold);">NORMAL</span>
+      <span class="t-label">ANOMALY</span><span class="t-val" id="t-anomaly" style="color:var(--crimson);">NONE</span>
     </div>
 
     <div id="dpad">
@@ -106,6 +121,8 @@
 </div>
 
 <script src="boss.js"></script>
+<script src="abyss_modifiers.js"></script>
+<script src="archon.js"></script>
 <script>
 (function(){
   'use strict';
@@ -123,11 +140,13 @@
   var radarCtx = radarC.getContext('2d');
   var fpsDisp = document.getElementById('fps-meter');
 
+  var currentFloor = 5;
   var isBossMode = false;
   var currentSeed = 'DEMON-' + Math.floor(Math.random()*9000 + 1000);
   var floorGrid = [];
   var rooms = [];
   var hostiles = [];
+  var activeModifier = null;
   var player = { gx: 24, gy: 18, rx: 24 * TILE * SCALE, ry: 18 * TILE * SCALE, moving: false, dir: 's' };
 
   function mulberry32(a) {
@@ -140,16 +159,40 @@
   }
 
   function hashSeed(s) {
-    var h = 1779033703 ^ s.length;
-    for (var i = 0; i < s.length; i++) {
-      h = Math.imul(h ^ s.charCodeAt(i), 3432918353);
+    var str = String(s || '');
+    var h = 1779033703 ^ str.length;
+    for (var i = 0; i < str.length; i++) {
+      h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
       h = h << 13 | h >>> 19;
     }
     return (h ^ h >>> 16) >>> 0;
   }
 
+  function updateLeylineDisplay() {
+    var banner = document.getElementById('leyline-banner');
+    var tag = document.getElementById('leyline-tag');
+    var desc = document.getElementById('leyline-desc');
+    var tAnomaly = document.getElementById('t-anomaly');
+
+    if (!activeModifier) {
+      banner.style.borderColor = 'var(--panel-border)';
+      tag.style.color = 'var(--dim)';
+      tag.textContent = 'LEYLINE: STABLE';
+      desc.textContent = 'Standard cognitive gravity without distortion.';
+      tAnomaly.textContent = 'NONE';
+      tAnomaly.style.color = 'var(--dim)';
+    } else {
+      banner.style.borderColor = activeModifier.color || 'var(--crimson)';
+      tag.style.color = activeModifier.color || 'var(--crimson)';
+      tag.textContent = 'ANOMALY: ' + activeModifier.name;
+      desc.textContent = activeModifier.desc || 'Active environmental interference.';
+      tAnomaly.textContent = activeModifier.badge || activeModifier.name;
+      tAnomaly.style.color = activeModifier.color || 'var(--crimson)';
+    }
+  }
+
   function initNormalDungeon(seed) {
-    var rng = mulberry32(hashSeed(seed));
+    var rng = mulberry32(hashSeed(seed + ':' + currentFloor));
     floorGrid = [];
     for (var y = 0; y < MAP_H; y++) {
       floorGrid[y] = new Array(MAP_W).fill(WALL);
@@ -200,17 +243,29 @@
         timer: 0
       });
     }
+
+    if (window.AbyssModifiers) {
+      activeModifier = window.AbyssModifiers.getFloorModifier(seed, currentFloor);
+    } else {
+      activeModifier = null;
+    }
+    updateLeylineDisplay();
+
     document.getElementById('t-mode').textContent = 'STANDARD';
     document.getElementById('t-mode').style.color = 'var(--cyan)';
-    document.getElementById('floor-indicator').textContent = 'FLOOR 01 · PATROL SECTOR';
+    document.getElementById('floor-indicator').textContent = 'FLOOR ' + (currentFloor < 10 ? '0' + currentFloor : currentFloor) + ' · PATROL SECTOR';
   }
 
   function initBossDungeon(seed) {
-    if (!window.BossModule) {
+    var floorData = null;
+    if (window.BossModule) {
+      floorData = window.BossModule.generateBossFloor(seed, MAP_W, MAP_H);
+    }
+    if (!floorData) {
       initNormalDungeon(seed);
       return;
     }
-    var floorData = window.BossModule.generateBossFloor(seed, MAP_W, MAP_H);
+
     floorGrid = floorData.grid;
     rooms = floorData.rooms;
     player.gx = floorData.playerSpawn.x;
@@ -218,15 +273,38 @@
     player.rx = player.gx * TILE * SCALE;
     player.ry = player.gy * TILE * SCALE;
 
-    hostiles = [floorData.bossEntity].concat(floorData.minions);
-    document.getElementById('t-mode').textContent = 'BOSS SANCTUM';
+    // Check if Tier 4 Archon is triggered (Floor 10+ or seeded archon)
+    var bossObj = floorData.bossEntity;
+    if (window.ArchonModule && currentFloor >= 10) {
+      var archonKey = (hashSeed(seed) % 2 === 0) ? 'malphas_prime' : 'decarabia_void';
+      var archonData = window.ArchonModule.ARCHONS[archonKey];
+      bossObj = {
+        isBoss: true,
+        isArchon: true,
+        gx: floorData.bossEntity.gx,
+        gy: floorData.bossEntity.gy,
+        type: archonData
+      };
+    }
+
+    hostiles = [bossObj].concat(floorData.minions);
+
+    if (window.AbyssModifiers) {
+      activeModifier = window.AbyssModifiers.getFloorModifier(seed, currentFloor);
+    } else {
+      activeModifier = null;
+    }
+    updateLeylineDisplay();
+
+    document.getElementById('t-mode').textContent = bossObj.isArchon ? 'ARCHON SANCTUM' : 'BOSS SANCTUM';
     document.getElementById('t-mode').style.color = 'var(--crimson)';
-    document.getElementById('floor-indicator').textContent = 'FLOOR 66 // PRIME BOSS CHAMBER';
+    document.getElementById('floor-indicator').textContent = 'FLOOR ' + (currentFloor < 10 ? '0' + currentFloor : currentFloor) + ' // ' + (bossObj.isArchon ? 'ABYSSAL ARCHON' : 'PRIME CHAMBER');
   }
 
   function regen(seed) {
     currentSeed = seed || ('DEMON-' + Math.floor(Math.random()*9000 + 1000));
     document.getElementById('seed-disp').textContent = currentSeed;
+    document.getElementById('floor-disp').textContent = (currentFloor < 10 ? '0' + currentFloor : currentFloor);
     if (isBossMode) {
       initBossDungeon(currentSeed);
     } else {
@@ -272,7 +350,14 @@
     var dialog = document.getElementById('dialog-overlay');
     var dTitle = document.getElementById('d-title');
     var dBody = document.getElementById('d-body');
-    if (h.isBoss) {
+    if (h.isArchon) {
+      dTitle.textContent = '⚠️ SUPREME DANGER // ARCHON COGNITION DETECTED';
+      dTitle.style.color = '#ff0055';
+      dBody.innerHTML = '<strong>' + (h.type.name || 'ABYSSAL ARCHON') + '</strong><br/>' +
+        '<span style="color:var(--gold);font-size:9.5px;">' + (h.type.title || 'ARCHON CLASS APEX DAEMON') + '</span><br/>' +
+        'HP: ' + h.type.hp + ' / ' + h.type.maxHp + ' · Actions: 3/Turn<br/>' +
+        '<em>Relic: ' + (h.type.relicDrops ? h.type.relicDrops[0].name : 'Unknown') + '</em>';
+    } else if (h.isBoss) {
       dTitle.textContent = '⚠️ CRITICAL ALERT // APEX DAEMON DETECTED';
       dTitle.style.color = 'var(--crimson)';
       dBody.innerHTML = '<strong>' + (h.type.name || 'APOSTLE OF ZERO') + '</strong><br/>' +
@@ -297,6 +382,10 @@
 
   document.getElementById('btn-regen').onclick = function(){
     regen();
+  };
+  document.getElementById('btn-next-floor').onclick = function(){
+    currentFloor = (currentFloor >= 12) ? 1 : currentFloor + 1;
+    regen(currentSeed);
   };
   document.getElementById('btn-boss-toggle').onclick = function(){
     isBossMode = !isBossMode;
@@ -362,10 +451,12 @@
           ctx.strokeStyle = '#182038';
           ctx.strokeRect(screenX, screenY, ts, ts);
         } else if (tile === FLOOR) {
-          ctx.fillStyle = '#080c16';
+          ctx.fillStyle = (activeModifier && activeModifier.bg) ? '#080c16' : '#080c16';
           ctx.fillRect(screenX, screenY, ts, ts);
-          ctx.fillStyle = '#0d1322';
+          ctx.fillStyle = (activeModifier && activeModifier.color) ? activeModifier.color : '#0d1322';
+          ctx.globalAlpha = activeModifier ? 0.08 : 1.0;
           ctx.fillRect(screenX + 2, screenY + 2, ts - 4, ts - 4);
+          ctx.globalAlpha = 1.0;
         } else if (tile === DOOR) {
           ctx.fillStyle = '#ffc14d';
           ctx.fillRect(screenX, screenY, ts, ts);
@@ -376,7 +467,17 @@
     hostiles.forEach(function(h){
       var hx = camX + h.gx * ts;
       var hy = camY + h.gy * ts;
-      if (h.isBoss) {
+      if (h.isArchon) {
+        ctx.fillStyle = 'rgba(255, 0, 85, 0.3)';
+        ctx.beginPath();
+        ctx.arc(hx + ts/2, hy + ts/2, ts * 1.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = h.type.col || '#ff0055';
+        ctx.fillRect(hx + 2, hy + 2, ts - 4, ts - 4);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(hx + 10, hy + 10, 8, 8);
+        ctx.fillRect(hx + ts - 18, hy + 10, 8, 8);
+      } else if (h.isBoss) {
         ctx.fillStyle = 'rgba(255,0,51,0.25)';
         ctx.beginPath();
         ctx.arc(hx + ts/2, hy + ts/2, ts, 0, Math.PI * 2);
@@ -420,8 +521,8 @@
     }
 
     hostiles.forEach(function(h){
-      radarCtx.fillStyle = h.isBoss ? '#ff0033' : '#ff4d6d';
-      radarCtx.fillRect(h.gx * rw - 1, h.gy * rh - 1, h.isBoss ? 4 : 2, h.isBoss ? 4 : 2);
+      radarCtx.fillStyle = h.isArchon ? '#ff0055' : (h.isBoss ? '#ff0033' : '#ff4d6d');
+      radarCtx.fillRect(h.gx * rw - 1, h.gy * rh - 1, h.isArchon ? 5 : (h.isBoss ? 4 : 2), h.isArchon ? 5 : (h.isBoss ? 4 : 2));
     });
 
     radarCtx.fillStyle = '#49e2ff';
@@ -429,7 +530,7 @@
   }
 
   isBossMode = true;
-  regen('BOSS-INIT-01');
+  regen('ABYSS-RUN-01');
   requestAnimationFrame(render);
 })();
 </script>
