@@ -89,6 +89,9 @@
 <script src="rewards.js"></script>
 <script src="negotiate.js"></script>
 <script src="fusion.js"></script>
+<script src="abyss_modifiers.js"></script>
+<script src="progression.js"></script>
+<script src="leyline_battle_hud.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -144,7 +147,7 @@
 
 <div class="result" id="result"><h2 id="resultTxt">VICTORY</h2>
   <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
-    <a class="btn big" href="dungeon.html">🏰 RETURN TO DUNGEON</a>
+    <a class="btn big" href="dungeon.html" id="victoryDungeonBtn">🏰 RETURN TO DUNGEON</a>
     <button class="btn" onclick="location.reload()">↻ REMATCH</button>
   </div>
 </div>
@@ -230,11 +233,15 @@ let PACT_ROSTER = [
 
 function updateRosterUI(){
   const bar = document.getElementById('rosterChips');
+  if(!bar) return;
   bar.innerHTML = '';
   PACT_ROSTER.forEach((d, idx)=>{
     bar.insertAdjacentHTML('beforeend', '<div class="roster-chip"><b>T'+(d.tier||1)+'</b> '+d.name+'</div>');
   });
-  document.getElementById('rosterBar').querySelector('.tag').textContent = 'PACT ROSTER ['+PACT_ROSTER.length+'/8]:';
+  const tagEl = document.getElementById('rosterBar');
+  if(tagEl && tagEl.querySelector('.tag')){
+    tagEl.querySelector('.tag').textContent = 'PACT ROSTER ['+PACT_ROSTER.length+'/8]:';
+  }
   updateSoulHud();
 }
 
@@ -268,6 +275,7 @@ function drawHero(cv){const g=cv.getContext('2d');g.imageSmoothingEnabled=false;
 /* ===== read params ===== */
 const params=new URLSearchParams(location.search);
 const seed=params.get('seed')||'arabella';
+const floorNum=parseInt(params.get('floor')||'1',10);
 let enemyId=params.get('enemy');
 if(!ENEMY_DB[enemyId]){
  if(enemyId==='pyrojack')enemyId='pyroclocker';
@@ -279,8 +287,10 @@ if(!ENEMY_DB[enemyId]){
 const E=JSON.parse(JSON.stringify(ENEMY_DB[enemyId]));
 const H=JSON.parse(JSON.stringify(HERO));
 E.maxhp=E.hp;H.maxhp=H.hp;H.maxsp=H.sp;
-document.getElementById('encTag').textContent='ENCOUNTER · SEED '+seed.toUpperCase();
-document.getElementById('dungeonLink').href='dungeon.html?seed='+encodeURIComponent(seed);
+document.getElementById('encTag').textContent='ENCOUNTER · SEED '+seed.toUpperCase()+' (F'+floorNum+')';
+document.getElementById('dungeonLink').href='dungeon.html?seed='+encodeURIComponent(seed)+'&floor='+floorNum;
+const victoryBtn = document.getElementById('victoryDungeonBtn');
+if(victoryBtn) victoryBtn.href='dungeon.html?seed='+encodeURIComponent(seed)+'&floor='+floorNum;
 
 /* ===== setup UI ===== */
 drawCreature(document.getElementById('enemySprite'),E);
@@ -315,217 +325,176 @@ function spendTurn(result){
  if(result==='weak'||result==='crit'){const fi=icons.indexOf('full');if(fi>=0){icons[fi]='half';}else icons.shift();}
  else if(result==='normal'){if(icons[icons.length-1]==='half')icons.pop();else icons.pop();}
  else if(result==='miss'){icons.pop();if(icons.length)icons.pop();}
- else if(result==='nul'){icons=icons.slice(0,-2);}
- else if(result==='drain'){icons=[];}
- renderIcons();}
-function affResult(el,aff){if(el==='heal'||el==='talk'||el==='fuse')return'normal';if(!aff||!aff[el])return'normal';return aff[el];}
-function updateBars(){document.getElementById('heroHp').style.width=Math.max(0,H.hp/H.maxhp*100)+'%';
- document.getElementById('heroSp').style.width=Math.max(0,H.sp/H.maxsp*100)+'%';
- document.getElementById('enemyHp').style.width=Math.max(0,E.hp/E.maxhp*100)+'%';
- document.getElementById('heroHpTxt').textContent=Math.max(0,H.hp|0)+'/'+H.maxhp;
- document.getElementById('heroSpTxt').textContent=Math.max(0,H.sp|0)+'/'+H.maxsp;
- document.getElementById('enemyHpTxt').textContent=Math.max(0,E.hp|0)+'/'+E.maxhp;}
-function setSkills(on){document.querySelectorAll('.skill').forEach(b=>{const s=SKILLS.find(x=>x.id===b.dataset.id);
- b.disabled=!on||busy||(s.cost>H.sp);});}
-function dmg(base,pow,result){let mult=1;if(result==='weak')mult=1.6;if(result==='crit')mult=1.8;if(result==='res')mult=.5;
- const v=base*pow*mult*(0.9+Math.random()*0.2);return Math.round(v);}
-
-/* ===== hero turn ===== */
-function heroAction(s){if(busy||turn!=='hero')return;if(s.cost>H.sp)return;
- if(s.isFuse){openFusionModal();return;}
- busy=true;setSkills(false);
- H.sp-=s.cost;
- if(s.isTalk){
-   log(H.name+' initiates <b>NEGOTIATION LINK</b> with '+E.name+'...','i');
-   if(window.DemonNegotiator && window.DemonNegotiator.startNegotiation){
-     window.DemonNegotiator.startNegotiation(E, result=>{
-       busy=false;
-       if(result.outcome==='recruit'){
-         log('PACT FORMED! '+result.message,'g');
-         PACT_ROSTER.push(JSON.parse(JSON.stringify(E)));
-         updateRosterUI();
-         finish(true, 'RECRUITED');
-       }else if(result.outcome==='flee'){
-         log('TRUCE CONCLUDED: '+result.message,'w');
-         finish(true, 'PACIFIED');
-       }else{
-         log('NEGOTIATION FRACTURED: '+result.message,'c');
-         spendTurn('normal');
-         if(icons.length<=0){startEnemyTurn();}else setSkills(true);
-       }
-     });
-   }else{
-     log('Negotiation module offline.','c');
-     spendTurn('normal');
-     endSub();
-   }
-   return;
- }
- if(s.el==='heal'){const heal=Math.round(H.maxhp*.35);H.hp=Math.min(H.maxhp,H.hp+heal);
-   log(H.name+' executes <b>PATCH</b> (+'+heal+' Integrity)','g');spendTurn('normal');updateBars();return endSub();}
- let aff=E.aff[s.el],result=affResult(s.el,aff);
- if(result==='drain'){revealed[s.el]=true;const abs=dmg(E.atk,1,'normal');E.hp=Math.min(E.maxhp,E.hp+abs);
-   log(E.name+' <b>DRAINS</b> '+s.name+' (+'+abs+' Integrity)!','c');spendTurn('drain');renderAff();updateBars();return endSub();}
- if(result==='nul'){revealed[s.el]=true;log(E.name+' <b>NULLIFIES</b> '+s.name+'!','i');spendTurn('nul');renderAff();updateBars();return endSub();}
- const crit=Math.random()<.12 && result==='normal';
- const rtag=crit?'crit':result;const d=dmg(H.atk,s.pow,rtag);E.hp-=d;
- if(result==='weak'){revealed[s.el]=true;log('VULNERABILITY! '+s.name+' fractures '+E.name+' for <b>'+d+'</b> — bonus cycle!','w');}
- else if(crit)log('CRITICAL OVERLOAD! '+s.name+' hits for <b>'+d+'</b> — bonus cycle!','w');
- else if(result==='res'){revealed[s.el]=true;log(E.name+' dampens '+s.name+' ('+d+')','i');}
- else log(H.name+' applies '+s.name+' — '+d+' dmg');
- renderAff();spendTurn(rtag);updateBars();endSub();}
-function endSub(){setTimeout(()=>{busy=false;
- if(E.hp<=0)return finish(true);
- if(icons.length<=0){startEnemyTurn();}else setSkills(true);},550);}
-
-/* ===== enemy turn ===== */
-function startEnemyTurn(){turn='enemy';icons=makeIcons(2);renderIcons();setSkills(false);log('— '+E.name+' PHASE —','c');setTimeout(enemyAct,650);}
-function enemyAct(){if(icons.length<=0)return startHeroTurn();
- const el=E.skills[(Math.random()*E.skills.length)|0];
- const s={thermal:'THERMAL SURGE',cryo:'CRYO QUENCH',volt:'VOLT ARC',void:'VOID COLLAPSE',kinetic:'KINETIC STRIKE'}[el];
- let result=affResult(el,H.aff);const crit=Math.random()<.1&&result==='normal';const rtag=crit?'crit':result;
- let d=dmg(E.atk,el==='kinetic'?1:1.2,rtag);
- if(result==='weak'){H.hp-=d;log('CRITICAL PENETRATION! '+E.name+'\u2019s '+s+' strikes YOU for <b>'+d+'</b>!','c');}
- else if(crit){H.hp-=d;log('OVERLOAD STRIKE! '+E.name+'\u2019s '+s+' hits for <b>'+d+'</b>!','c');}
- else if(result==='res'){H.hp-=d;log('You dampen '+s+' ('+d+')','i');}
- else{H.hp-=d;log(E.name+' unleashes '+s+' — '+d+' dmg','c');}
- spendTurn(rtag);updateBars();
- setTimeout(()=>{if(H.hp<=0)return finish(false);if(icons.length>0)enemyAct();else startHeroTurn();},650);}
-function startHeroTurn(){turn='hero';icons=makeIcons(4);renderIcons();setSkills(true);log('— YOUR CYCLE —','g');}
-
-/* ===== end ===== */
-function finish(win, title){const r=document.getElementById('result');r.classList.add('show',win?'win':'lose');
- document.getElementById('resultTxt').textContent=title||(win?'VICTORY':'PURGED');
- log(win?'<b>'+E.name+' process decommissioned.</b>':'<b>Frame halted.</b>',win?'g':'c');}
-
-/* ===== FUSION CHAMBER LOGIC ===== */
-function openFusionModal(){
-  const modal = document.getElementById('fusionModal');
-  const selA = document.getElementById('fuseSelectA');
-  const selB = document.getElementById('fuseSelectB');
-  selA.innerHTML = ''; selB.innerHTML = '';
-  
-  if(PACT_ROSTER.length < 2){
-    selA.innerHTML = '<option value="">(Need >= 2 demons in roster)</option>';
-    selB.innerHTML = '<option value="">(Need >= 2 demons in roster)</option>';
-    document.getElementById('execFuseBtn').disabled = true;
-  } else {
-    PACT_ROSTER.forEach((d, i)=>{
-      selA.insertAdjacentHTML('beforeend', '<option value="'+i+'">'+d.name+' (T'+(d.tier||1)+')</option>');
-      selB.insertAdjacentHTML('beforeend', '<option value="'+i+'" '+(i===1?'selected':'')+'>'+d.name+' (T'+(d.tier||1)+')</option>');
-    });
-    document.getElementById('execFuseBtn').disabled = false;
-  }
-  updateFusionPreview();
-  modal.classList.add('open');
+ else if(result==='nul'||result==='drain'||result==='rpl'){icons.length=0;}
+ renderIcons();
 }
 
-function closeFusionModal(){
-  document.getElementById('fusionModal').classList.remove('open');
+function updateBars(){
+  document.getElementById('heroHpTxt').textContent=H.hp+'/'+H.maxhp;
+  document.getElementById('heroHp').style.width=Math.max(0,Math.round((H.hp/H.maxhp)*100))+'%';
+  document.getElementById('heroSpTxt').textContent=H.sp+'/'+H.maxsp;
+  document.getElementById('heroSp').style.width=Math.max(0,Math.round((H.sp/H.maxsp)*100))+'%';
+  document.getElementById('enemyHpTxt').textContent=E.hp+'/'+E.maxhp;
+  document.getElementById('enemyHp').style.width=Math.max(0,Math.round((E.hp/E.maxhp)*100))+'%';
 }
 
-function updateFusionPreview(){
-  const idxA = parseInt(document.getElementById('fuseSelectA').value, 10);
-  const idxB = parseInt(document.getElementById('fuseSelectB').value, 10);
-  const nameEl = document.getElementById('fuseResultName');
-  const statsEl = document.getElementById('fuseResultStats');
-  const affBox = document.getElementById('fuseResultAff');
-  const badgeEl = document.getElementById('fuseTierBadge');
-  const execBtn = document.getElementById('execFuseBtn');
-  affBox.innerHTML = '';
-  if(badgeEl) badgeEl.style.display = 'none';
-
-  if(isNaN(idxA) || isNaN(idxB) || !PACT_ROSTER[idxA] || !PACT_ROSTER[idxB]){
-    nameEl.textContent = '— NO VALID VESSELS —';
-    statsEl.textContent = 'Recruit demons via negotiation or select distinct candidates.';
-    if(execBtn) execBtn.disabled = true;
+function heroAction(s){
+  if(busy||turn!=='hero')return;
+  if(s.isTalk){
+    if(window.NegotiateModule&&typeof window.NegotiateModule.start==='function'){
+      window.NegotiateModule.start(E, PACT_ROSTER, function(res){
+        if(res.recruited){ updateRosterUI(); checkEnd(); }
+      });
+    }
     return;
   }
+  if(s.isFuse){ openFusionModal(); return; }
+  if(s.el==='heal'){
+    if(H.sp<s.cost){ log('Insufficient FLUX!','c'); return; }
+    H.sp-=s.cost; H.hp=Math.min(H.maxhp, H.hp+40);
+    log('Repair cycles restored +40 Integrity.','g');
+    updateBars(); spendTurn('normal'); checkEnd(); return;
+  }
+  if(H.sp<s.cost){ log('Insufficient FLUX!','c'); return; }
+  H.sp-=s.cost;
+  const aff=E.aff[s.el]||'normal';
+  revealed[s.el]=true; renderAff();
+  let dmg=Math.round(H.atk*s.pow);
+  let resType='normal';
   
-  const dA = PACT_ROSTER[idxA];
-  const dB = PACT_ROSTER[idxB];
-  
-  if(window.DemonFusion && window.DemonFusion.preview){
-    const result = window.DemonFusion.preview(dA, dB);
-    if(result){
-      if(badgeEl){
-        badgeEl.style.display = 'inline-block';
-        if(result.isLocked){
-          badgeEl.className = 'badge-locked';
-          badgeEl.textContent = '🔒 RECIPE TIER ' + (result.tier||3) + ' LOCKED: ARCHON CIPHER KEY REQUIRED';
-        } else {
-          badgeEl.className = 'badge-unlocked';
-          badgeEl.textContent = '🔓 RECIPE TIER ' + (result.tier||1) + ' UNLOCKED';
-        }
-      }
-      
-      nameEl.innerHTML = '<b style="color:'+(result.col||'#c084fc')+'">'+result.name+' [TIER '+(result.tier||2)+']</b>';
-      if(result.isLocked){
-        statsEl.innerHTML = '<span style="color:var(--crimson);font-weight:700">'+result.lockReason+'</span><br><small style="color:var(--dim)">Defeat Null Colossus in Boss Sanctum to extract the Archon Cipher Key.</small>';
-        if(execBtn) execBtn.disabled = true;
-      } else {
-        statsEl.innerHTML = 'HP: <b>'+result.hp+'</b> · SP: <b>'+result.sp+'</b> · ATK: <b>'+result.atk+'</b><br><small style="color:var(--dim)">'+result.lore+'</small>';
-        if(execBtn) execBtn.disabled = false;
-      }
-      if(result.aff){
-        for(const el of ELEMENTS){
-          const a = result.aff[el];
-          if(a && a !== 'normal'){
-            const cls = a==='weak'?'weak':a==='res'?'res':a==='nul'?'nul':'rpl';
-            affBox.insertAdjacentHTML('beforeend', '<span class="'+cls+'">'+el.toUpperCase()+':'+a.toUpperCase()+'</span>');
-          }
-        }
-      }
-      return;
+  // Anomaly modifier hooks
+  if(window.LeylineBattleHUD && window.LeylineBattleHUD.activeAnomaly){
+    const anom = window.LeylineBattleHUD.activeAnomaly;
+    if(anom.id === 'MOD_THERMAL_SURGE' && s.el === 'thermal'){
+      dmg = Math.round(dmg * 1.35);
     }
   }
-  nameEl.textContent = 'FUSION PREVIEW OFFLINE';
-  statsEl.textContent = 'DemonFusion module not loaded.';
-  if(execBtn) execBtn.disabled = true;
-}
 
-function executeFusion(){
-  const idxA = parseInt(document.getElementById('fuseSelectA').value, 10);
-  const idxB = parseInt(document.getElementById('fuseSelectB').value, 10);
-  if(isNaN(idxA) || isNaN(idxB) || idxA === idxB){
-    alert('Select two different demon processes from your roster.');
-    return;
+  if(aff==='weak'){
+    dmg=Math.round(dmg*1.5);
+    resType='weak';
+    log('CRITICAL RESONANCE! Exploited '+s.el.toUpperCase()+' vulnerability for '+dmg+' dmg.','w');
+    // Relic hook: Broken Gate FLUX refund
+    if(window.LeylineBattleHUD && window.LeylineBattleHUD.activeRelics.some(r=>r.id==='relic_broken_gate')){
+      const refund = Math.max(2, Math.round(s.cost * 0.15));
+      H.sp = Math.min(H.maxsp, H.sp + refund);
+      log('› [RELIC REFUND] Circuit resonance restores +'+refund+' FLUX.','w');
+    }
+  } else if(aff==='res'){
+    dmg=Math.round(dmg*0.5);
+    log('Hostile armor absorbed '+s.el.toUpperCase()+' (-50% dmg). Dealt '+dmg+'.','c');
+  } else if(aff==='nul'){
+    dmg=0; resType='nul';
+    log('Attack nullified by hostile barrier! Turn forfeited!','c');
+  } else if(aff==='drain'||aff==='rpl'){
+    E.hp=Math.min(E.maxhp, E.hp+dmg);
+    resType='drain';
+    log('Hostile absorbed '+s.el.toUpperCase()+' frequency! Recovered +'+dmg+' HP!','c');
+    dmg=0;
+  } else {
+    log('Dealt '+dmg+' kinetic/spectral dmg.','g');
   }
-  
-  const dA = PACT_ROSTER[idxA];
-  const dB = PACT_ROSTER[idxB];
-  const fused = window.DemonFusion.fuse(dA, dB);
-  
-  if(!fused){
-    alert('Fusion synthesis failed or recipe tier is cipher-locked.');
-    return;
-  }
-
-  // Remove parents in descending index order
-  const [first, second] = idxA > idxB ? [idxA, idxB] : [idxB, idxA];
-  PACT_ROSTER.splice(first, 1);
-  PACT_ROSTER.splice(second, 1);
-  PACT_ROSTER.unshift(fused);
-
-  updateRosterUI();
-  closeFusionModal();
-  log('⚡ <b>DEMON FUSION COMPLETE!</b> Synthesized: <span class="p">'+fused.name+' [TIER '+fused.tier+']</span>','p');
-  log('Derived ATK: '+fused.atk+' · HP: '+fused.hp+' · Inherited: '+fused.inheritedSkill.toUpperCase(),'p');
-  
-  // Buff hero flux on successful fusion
-  H.sp = Math.min(H.maxsp, H.sp + 25);
+  if(dmg>0){ E.hp=Math.max(0, E.hp-dmg); }
   updateBars();
+  spendTurn(resType);
+  checkEnd();
 }
 
-/* ===== boot ===== */
-if(window.location.search.indexOf('mode=fusion') !== -1){
-  setTimeout(openFusionModal, 200);
+function enemyTurn(){
+  busy=true; turn='enemy';
+  icons=makeIcons(2); renderIcons();
+  log('— HOSTILE CYCLE —','c');
+  setTimeout(stepEnemy, 600);
 }
-for(const el of ELEMENTS)if(E.aff[el]==='weak'){/* hidden until discovered */}
-renderAff();updateBars();startHeroTurn();
-log('Hostile process <b>'+E.name+'</b> materialized from seed <b>'+seed+'</b>.','c');
-log('Probe resistance profiles — strike VULNERABILITIES for bonus tactical cycles.','w');
-log('Fusion chamber online. Combine recruited demons via <b>FUSE</b> action.','p');
+
+function stepEnemy(){
+  if(icons.length===0||E.hp<=0||H.hp<=0){
+    busy=false; turn='hero';
+    icons=makeIcons(2); renderIcons();
+    log('— YOUR CYCLE —');
+    return;
+  }
+  const sk=E.skills[Math.floor(Math.random()*E.skills.length)];
+  let dmg=Math.round(E.atk*1.1);
+  const aff=H.aff[sk]||'normal';
+  let resType='normal';
+  if(aff==='weak'){
+    dmg=Math.round(dmg*1.5); resType='weak';
+    log(E.name+' exploited Cairn-Frame weakness with '+sk.toUpperCase()+'! Dealt '+dmg+' dmg!','c');
+  } else {
+    log(E.name+' attacks with '+sk.toUpperCase()+'! Dealt '+dmg+' dmg.','c');
+  }
+  H.hp=Math.max(0, H.hp-dmg);
+  updateBars();
+  spendTurn(resType);
+  if(H.hp<=0){ checkEnd(); return; }
+  setTimeout(stepEnemy, 600);
+}
+
+function checkEnd(){
+  if(E.hp<=0){
+    busy=true;
+    document.getElementById('resultTxt').textContent='VICTORY';
+    document.getElementById('result').className='result win show';
+    log('Hostile process terminated. Tactical victory confirmed.','g');
+    if(window.SiliconRewards&&typeof window.SiliconRewards.onBattleVictory==='function'){
+      window.SiliconRewards.onBattleVictory(E);
+    }
+  } else if(H.hp<=0){
+    busy=true;
+    document.getElementById('resultTxt').textContent='PURGED';
+    document.getElementById('result').className='result lose show';
+    log('Cairn-Frame integrity compromised. Process purged.','c');
+  } else if(icons.length===0){
+    if(turn==='hero') enemyTurn();
+    else {
+      turn='hero'; icons=makeIcons(2); renderIcons();
+      log('— YOUR CYCLE —');
+    }
+  }
+}
+
+/* ===== Fusion modal integration ===== */
+function openFusionModal(){
+  const m=document.getElementById('fusionModal');
+  if(m) m.classList.add('open');
+  if(window.FusionModule&&typeof window.FusionModule.populateSelectors==='function'){
+    window.FusionModule.populateSelectors(PACT_ROSTER);
+  }
+}
+function closeFusionModal(){
+  const m=document.getElementById('fusionModal');
+  if(m) m.classList.remove('open');
+}
+function updateFusionPreview(){
+  if(window.FusionModule&&typeof window.FusionModule.updatePreview==='function'){
+    window.FusionModule.updatePreview(PACT_ROSTER);
+  }
+}
+function executeFusion(){
+  if(window.FusionModule&&typeof window.FusionModule.execute===function(){
+    window.FusionModule.execute(PACT_ROSTER, function(res){
+      updateRosterUI();
+      closeFusionModal();
+    });
+  }
+}
+
+// Expose globals for Leyline HUD & Modules
+window.revealed = revealed;
+window.renderAff = renderAff;
+window.icons = icons;
+window.renderIcons = renderIcons;
+window.addLog = log;
+window.heroState = H;
+window.enemyState = E;
+
+// Initialize Arena State
+icons=makeIcons(2); renderIcons();
+updateBars();
+log('Hostile process '+E.name+' materialized from seed '+seed+'.');
+log('Probe resistance profiles — strike VULNERABILITIES for bonus tactical cycles.');
+log('Fusion chamber online. Combine recruited demons via FUSE action.');
 </script>
 </body>
 </html>
