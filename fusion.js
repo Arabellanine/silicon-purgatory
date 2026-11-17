@@ -6,7 +6,7 @@
  * with itself overclocks it. Unknown pairings fall back to a stat-averaged
  * hybrid so the engine never returns null for two valid parents.
  *
- * Tier 3 recipe synthesis & Archon relic unlock polish integrated.
+ * Tier 3 recipe synthesis, Tier 4 Transcendent Archon recipes, & Archon relic unlock integration.
  */
 (function (root) {
   'use strict';
@@ -88,7 +88,7 @@
   };
 
   /* ------------------------------------------------------------------ *
-   * Fusion templates (Tier 2-3).
+   * Fusion templates (Tier 2-4).
    * ------------------------------------------------------------------ */
   var FUSED_DB = {
     frostfire_golem: {
@@ -139,6 +139,35 @@
       horns: true, aff: aff('res', 'res', 'res', 'res', 'nul'),
       skills: ['void', 'volt', 'thermal'], inheritedSkill: 'void',
       lore: 'Forged under the Archon Cipher Key. Master of all tactical cycles.'
+    },
+
+    /* Tier 4 Transcendent Archons (Requires Archon Relic Catalysts) */
+    malphas_prime: {
+      id: 'malphas_prime', name: 'MALPHAS PRIME', tier: 4,
+      hp: 320, sp: 140, atk: 68, col: '#f59e0b', col2: '#78350f', glow: '#fbbf24',
+      horns: true, aff: aff('res', 'weak', 'normal', 'nul', 'drain'),
+      skills: ['kinetic', 'volt', 'void'], inheritedSkill: 'volt',
+      catalyst: 'relic_broken_gate',
+      catalystName: 'Sigil of the Broken Gate',
+      lore: 'Gate Sovereign of the Broken Circuit. Wields shattered leyline frequencies.'
+    },
+    decarabia_watcher: {
+      id: 'decarabia_watcher', name: 'DECARABIA WATCHER', tier: 4,
+      hp: 340, sp: 160, atk: 64, col: '#8b5cf6', col2: '#4c1d95', glow: '#a78bfa',
+      horns: false, aff: aff('weak', 'drain', 'nul', 'res', 'res'),
+      skills: ['void', 'thermal', 'cryo'], inheritedSkill: 'void',
+      catalyst: 'relic_watcher_omniscience',
+      catalystName: "Watcher's Omniscience",
+      lore: 'Ocular Archon of Entropy. Strips away all cognitive obscurity.'
+    },
+    ouroboros_demiurge: {
+      id: 'ouroboros_demiurge', name: 'OUROBOROS DEMIURGE', tier: 4,
+      hp: 420, sp: 200, atk: 78, col: '#10b981', col2: '#064e3b', glow: '#34d399',
+      horns: true, aff: aff('res', 'nul', 'nul', 'nul', 'drain'),
+      skills: ['void', 'volt', 'thermal', 'kinetic'], inheritedSkill: 'void',
+      catalyst: 'relic_abyssal_unification',
+      catalystName: 'Abyssal Unification (Both Archon Relics)',
+      lore: 'The apex synthesis of Circuit Gate and Astral Eye. Sovereign of infinite cycles.'
     }
   };
 
@@ -156,6 +185,14 @@
   RECIPES[key('sparkharvester', 'cryodrifter')]  = 'void_archon';
   RECIPES[key('coreinquisitor', 'plasma_archon')]   = 'archon_prime';
   RECIPES[key('coreinquisitor', 'frostfire_golem')]  = 'archon_prime';
+
+  /* Tier 4 Transcendent Archon Recipes */
+  RECIPES[key('archon_prime', 'storm_sentinel')]     = 'malphas_prime';
+  RECIPES[key('archon_prime', 'dread_chariot')]      = 'malphas_prime';
+  RECIPES[key('void_archon', 'frostfire_golem')]     = 'decarabia_watcher';
+  RECIPES[key('void_archon', 'glacier_sentinel')]    = 'decarabia_watcher';
+  RECIPES[key('archon_prime', 'void_archon')]        = 'ouroboros_demiurge';
+  RECIPES[key('malphas_prime', 'decarabia_watcher')] = 'ouroboros_demiurge';
 
   /* ------------------------------------------------------------------ *
    * Internals
@@ -225,33 +262,36 @@
   }
 
   /* Audio-visual polish on chamber unlock / Archon synthesis */
-  function playUnlockFX() {
+  function playUnlockFX(tier) {
     try {
       if (typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext)) {
         var AudioCtx = window.AudioContext || window.webkitAudioContext;
         var ctx = new AudioCtx();
         var osc = ctx.createOscillator();
         var gain = ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(261.63, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(523.25, ctx.currentTime + 0.2);
-        osc.frequency.exponentialRampToValueAtTime(1046.50, ctx.currentTime + 0.4);
-        gain.gain.setValueAtTime(0.15, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.45);
+        var isTier4 = (tier || 3) >= 4;
+        osc.type = isTier4 ? 'sine' : 'triangle';
+        var baseFreq = isTier4 ? 329.63 : 261.63; // E4 or C4
+        osc.frequency.setValueAtTime(baseFreq, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(baseFreq * 2, ctx.currentTime + 0.2);
+        osc.frequency.exponentialRampToValueAtTime(baseFreq * 4, ctx.currentTime + 0.4);
+        gain.gain.setValueAtTime(0.18, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start();
-        osc.stop(ctx.currentTime + 0.5);
+        osc.stop(ctx.currentTime + 0.55);
       }
     } catch (e) {}
 
     try {
       if (typeof document !== 'undefined') {
-        var el = document.getElementById('fusion-modal') || document.querySelector('.fusion-card') || document.body;
+        var el = document.getElementById('fusion-modal') || document.querySelector('.fusion-panel') || document.body;
         if (el) {
           el.style.transition = 'box-shadow 0.4s ease, border-color 0.4s ease';
-          el.style.borderColor = '#eab308';
-          el.style.boxShadow = '0 0 35px rgba(234, 179, 8, 0.6)';
+          var isT4 = (tier || 3) >= 4;
+          el.style.borderColor = isT4 ? '#10b981' : '#eab308';
+          el.style.boxShadow = isT4 ? '0 0 45px rgba(16, 185, 129, 0.8)' : '0 0 35px rgba(234, 179, 8, 0.6)';
           setTimeout(function () {
             el.style.boxShadow = '';
             el.style.borderColor = '';
@@ -263,11 +303,34 @@
 
   function hasCipherKey() {
     try {
-      if (typeof window !== 'undefined' && window.SiliconRewards && typeof window.SiliconRewards.hasCipherKey === 'function') {
-        return !!window.SiliconRewards.hasCipherKey();
+      if (typeof window !== 'undefined') {
+        if (window.SiliconProgression && typeof window.SiliconProgression.hasCipherKey === 'function') {
+          return !!window.SiliconProgression.hasCipherKey();
+        }
+        if (window.SiliconRewards && typeof window.SiliconRewards.hasCipherKey === 'function') {
+          return !!window.SiliconRewards.hasCipherKey();
+        }
+        if (typeof localStorage !== 'undefined') {
+          return localStorage.getItem('sp_archon_cipher_key') === 'true';
+        }
       }
-      if (typeof localStorage !== 'undefined') {
-        return localStorage.getItem('sp_archon_cipher_key') === 'true';
+    } catch (e) {}
+    return false;
+  }
+
+  function hasRelic(relicId) {
+    try {
+      if (typeof window !== 'undefined') {
+        if (window.SiliconProgression && typeof window.SiliconProgression.hasRelic === 'function') {
+          return !!window.SiliconProgression.hasRelic(relicId);
+        }
+        var raw = localStorage.getItem('silicon_purgatory_progression');
+        if (raw) {
+          var p = JSON.parse(raw);
+          if (p.inventory && p.inventory.indexOf(relicId) !== -1) return true;
+          if (p.activeRelics && p.activeRelics.indexOf(relicId) !== -1) return true;
+        }
+        if (localStorage.getItem('sp_' + relicId) === 'true') return true;
       }
     } catch (e) {}
     return false;
@@ -287,11 +350,31 @@
     
     var hasKey = hasCipherKey();
     var maxTier = 2;
-    if (typeof window !== 'undefined' && window.SiliconRewards && typeof window.SiliconRewards.unlockedTier === 'function') {
-      maxTier = window.SiliconRewards.unlockedTier();
+    if (typeof window !== 'undefined') {
+      if (window.SiliconProgression && typeof window.SiliconProgression.unlockedTier === 'function') {
+        maxTier = window.SiliconProgression.unlockedTier();
+      } else if (window.SiliconRewards && typeof window.SiliconRewards.unlockedTier === 'function') {
+        maxTier = window.SiliconRewards.unlockedTier();
+      }
     }
     
-    if ((res.tier || 1) >= 3) {
+    if ((res.tier || 1) >= 4) {
+      var cat = res.catalyst;
+      var catUnlocked = false;
+      if (cat === 'relic_abyssal_unification') {
+        catUnlocked = hasRelic('relic_broken_gate') && hasRelic('relic_watcher_omniscience');
+      } else if (cat) {
+        catUnlocked = hasRelic(cat);
+      }
+      
+      if (!catUnlocked) {
+        res.isLocked = true;
+        res.lockReason = 'REQUIRES RELIC CATALYST: ' + (res.catalystName || 'ARCHON RELIC (FOUND ON FLOOR 10+)').toUpperCase();
+      } else {
+        res.isLocked = false;
+        res.tierUnlockedBadge = 'TIER 4 TRANSCENDENT ARCHON SYNTHESIS ACTIVE';
+      }
+    } else if ((res.tier || 1) >= 3) {
       if (!hasKey && (res.tier || 1) > maxTier) {
         res.isLocked = true;
         res.lockReason = 'REQUIRES ARCHON CIPHER KEY (FOUND IN BOSS SANCTUM)';
@@ -313,7 +396,7 @@
     }
     var result = clone(resolveFusion(resolve(a), resolve(b)));
     if ((result.tier || 1) >= 3) {
-      playUnlockFX();
+      playUnlockFX(result.tier);
     }
     return result;
   }
@@ -327,6 +410,7 @@
     preview: preview,
     fuse: fuse,
     hasCipherKey: hasCipherKey,
+    hasRelic: hasRelic,
     playUnlockFX: playUnlockFX
   };
 
