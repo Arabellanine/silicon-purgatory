@@ -9,12 +9,16 @@
   'use strict';
 
   var STORAGE_KEY = 'silicon_purgatory_progression';
+  var TELEMETRY_KEY = 'sp_archon_telemetry';
 
   var DEFAULT_STATE = {
     soulFragments: 0,
     bossesDefeated: 0,
+    archonsDefeated: 0,
     inventory: [],
     activeRelics: [],
+    archonCatalysts: [],
+    transcendentFusions: [],
     unlockedGates: ['arena', 'fusion'],
     hasCipherKey: false,
     timestamp: Date.now()
@@ -35,13 +39,31 @@
     try {
       state.timestamp = Date.now();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      syncTelemetry(state);
     } catch (e) {
       console.warn('[SiliconProgression] save failed:', e);
     }
   }
 
+  function syncTelemetry(state) {
+    try {
+      if (typeof localStorage === 'undefined') return;
+      var telemetry = {
+        relics: state.activeRelics || [],
+        catalysts: state.archonCatalysts || [],
+        transcendent: state.transcendentFusions || [],
+        archonsDefeated: state.archonsDefeated || 0,
+        hasCipherKey: !!state.hasCipherKey,
+        soulFragments: state.soulFragments || 0,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(TELEMETRY_KEY, JSON.stringify(telemetry));
+    } catch (e) {}
+  }
+
   var SiliconProgression = {
     STORAGE_KEY: STORAGE_KEY,
+    TELEMETRY_KEY: TELEMETRY_KEY,
 
     get: function() {
       return loadState();
@@ -115,6 +137,91 @@
       } catch (e) {}
       saveState(s);
       return true;
+    },
+
+    recordArchonDefeat: function(archonId, relicDrops) {
+      var s = loadState();
+      s.archonsDefeated = (s.archonsDefeated || 0) + 1;
+      s.bossesDefeated = (s.bossesDefeated || 0) + 1;
+      if (relicDrops && Array.isArray(relicDrops)) {
+        relicDrops.forEach(function(r) {
+          if (r.id) {
+            if (r.type === 'relic') {
+              if (!s.activeRelics) s.activeRelics = [];
+              if (s.activeRelics.indexOf(r.id) === -1) s.activeRelics.push(r.id);
+            } else if (r.type === 'material') {
+              if (!s.archonCatalysts) s.archonCatalysts = [];
+              if (s.archonCatalysts.indexOf(r.id) === -1) s.archonCatalysts.push(r.id);
+            }
+            if (!s.inventory) s.inventory = [];
+            if (s.inventory.indexOf(r.id) === -1) s.inventory.push(r.id);
+            try {
+              if (typeof localStorage !== 'undefined') {
+                localStorage.setItem('sp_' + r.id, 'true');
+              }
+            } catch (e) {}
+          }
+        });
+      }
+      saveState(s);
+      return s;
+    },
+
+    hasCatalyst: function(catalystId) {
+      var s = loadState();
+      var cats = s.archonCatalysts || [];
+      var inv = s.inventory || [];
+      if (cats.indexOf(catalystId) !== -1 || inv.indexOf(catalystId) !== -1) return true;
+      try {
+        if (typeof localStorage !== 'undefined' && localStorage.getItem('sp_' + catalystId) === 'true') {
+          return true;
+        }
+      } catch (e) {}
+      return false;
+    },
+
+    grantCatalyst: function(catalystId) {
+      var s = loadState();
+      if (!s.archonCatalysts) s.archonCatalysts = [];
+      if (s.archonCatalysts.indexOf(catalystId) === -1) s.archonCatalysts.push(catalystId);
+      if (!s.inventory) s.inventory = [];
+      if (s.inventory.indexOf(catalystId) === -1) s.inventory.push(catalystId);
+      try {
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('sp_' + catalystId, 'true');
+        }
+      } catch (e) {}
+      saveState(s);
+      return true;
+    },
+
+    recordTranscendentFusion: function(fusionId) {
+      var s = loadState();
+      if (!s.transcendentFusions) s.transcendentFusions = [];
+      if (s.transcendentFusions.indexOf(fusionId) === -1) {
+        s.transcendentFusions.push(fusionId);
+      }
+      saveState(s);
+      return true;
+    },
+
+    getTelemetry: function() {
+      try {
+        if (typeof localStorage !== 'undefined') {
+          var t = localStorage.getItem(TELEMETRY_KEY);
+          if (t) return JSON.parse(t);
+        }
+      } catch (e) {}
+      var s = loadState();
+      return {
+        relics: s.activeRelics || [],
+        catalysts: s.archonCatalysts || [],
+        transcendent: s.transcendentFusions || [],
+        archonsDefeated: s.archonsDefeated || 0,
+        hasCipherKey: !!s.hasCipherKey,
+        soulFragments: s.soulFragments || 0,
+        timestamp: s.timestamp || Date.now()
+      };
     },
 
     unlockedTier: function() {
