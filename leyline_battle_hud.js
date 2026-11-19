@@ -2,8 +2,8 @@
  * SILICON PURGATORY // LEYLINE BATTLE EVENT TELEMETRY HUD & RELIC SYNERGY MODULE
  * Module: leyline_battle_hud.js
  * Exposes window.LeylineBattleHUD
- * Integrates environmental leyline anomalies and Tier 4 Archon relics directly
- * into the Tactical Cycle Arena combat loop.
+ * Integrates environmental leyline anomalies, Endless Spire elite affixes, and Tier 4 Archon relics
+ * directly into the Tactical Cycle Arena combat loop.
  */
 (function(window) {
   'use strict';
@@ -32,6 +32,8 @@
   var LeylineHUD = {
     activeAnomaly: null,
     activeRelics: [],
+    activeSpireMod: null,
+    activeEliteAffix: null,
     initialized: false,
 
     init: function() {
@@ -43,8 +45,11 @@
       var floor = parseInt(params.get('floor') || '1', 10);
       var anomalyId = params.get('anomaly');
 
-      // Resolve Leyline Anomaly
-      if (window.AbyssModifiers) {
+      // Resolve Leyline Anomaly or Spire Modifier
+      if (window.EndlessSpire && window.EndlessSpire.isSpireFloor(floor)) {
+        this.activeSpireMod = window.EndlessSpire.getSpireModifier(seed, floor);
+        this.activeEliteAffix = window.EndlessSpire.getEliteAffix(seed, floor, 1);
+      } else if (window.AbyssModifiers) {
         if (anomalyId) {
           this.activeAnomaly = window.AbyssModifiers.MODIFIERS.find(function(m) { return m.id === anomalyId; }) ||
                                window.AbyssModifiers.getFloorModifier(seed, floor);
@@ -60,8 +65,8 @@
       this.injectStyles();
       this.renderHUD(seed, floor);
 
-      // Hook Combat Start Telemetry
-      this.bindCombatTelemetry();
+      // Hook Combat Start Telemetry & Spire Combat Mutators
+      this.bindCombatTelemetry(floor, seed);
     },
 
     loadRelics: function() {
@@ -151,6 +156,19 @@
           color: #f8fafc;
           animation: pulseRelic 3s infinite alternate;
         }
+        .elite-affix-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 2px 6px;
+          border-radius: 3px;
+          font-size: 9px;
+          font-weight: 800;
+          border: 1px solid #ff2b44;
+          background: rgba(255, 43, 68, 0.15);
+          color: #ff2b44;
+          box-shadow: 0 0 8px rgba(255, 43, 68, 0.3);
+        }
         @keyframes pulseRelic {
           0% { box-shadow: 0 0 4px rgba(56, 189, 248, 0.2); }
           100% { box-shadow: 0 0 10px rgba(234, 179, 8, 0.4); }
@@ -166,11 +184,16 @@
       container.id = 'leyline-hud-root';
       container.className = 'leyline-telemetry-hud';
 
-      var mod = this.activeAnomaly;
       var badgeHtml = '';
       var descText = '';
 
-      if (mod) {
+      if (this.activeSpireMod) {
+        var sm = this.activeSpireMod;
+        badgeHtml = '<span class="leyline-badge active" style="color:' + sm.color + '; background:' + sm.color + '1a;">' +
+                    '▲ SPIRE DESCENT // ' + sm.name + '</span>';
+        descText = sm.desc;
+      } else if (this.activeAnomaly) {
+        var mod = this.activeAnomaly;
         badgeHtml = '<span class="leyline-badge active" style="color:' + mod.color + '; background:' + mod.color + '1a;">' +
                     '● LEYLINE INTERFERENCE // ' + mod.name + '</span>';
         descText = mod.desc;
@@ -180,6 +203,12 @@
       }
 
       var relicsHtml = '';
+      if (this.activeEliteAffix) {
+        var ea = this.activeEliteAffix;
+        relicsHtml += '<span class="elite-affix-badge" style="color:' + ea.color + '; border-color:' + ea.color + ';" title="' + ea.desc + '">' +
+                      '☠ ' + ea.tag + '</span>';
+      }
+
       if (this.activeRelics.length > 0) {
         for (var i = 0; i < this.activeRelics.length; i++) {
           var r = this.activeRelics[i];
@@ -189,18 +218,20 @@
         if (this.activeRelics.length >= 2) {
           relicsHtml += '<span class="relic-chip synergy" title="Dual Archon Resonance Active: Negative leyline penalties suppressed.">✨ ARCHON RESONANCE</span>';
         }
-      } else {
+      } else if (!this.activeEliteAffix) {
         relicsHtml = '<span style="font-size: 8.5px; color:#475569; letter-spacing:0.05em;">NO RELICS EQUIPPED</span>';
       }
+
+      var floorLabel = floor >= 11 ? ('DEPTH +' + (floor - 10) + ' (FL ' + floor + ')') : ('FLOOR ' + (floor < 10 ? '0' + floor : floor));
 
       container.innerHTML = `
         <div class="leyline-hud-row">
           <div style="display:flex; align-items:center; gap:8px;">
             ${badgeHtml}
-            <span style="font-size:9.5px; color:#64748b; letter-spacing:0.08em;">FLOOR ${floor < 10 ? '0' + floor : floor} · SEED ${seed.toUpperCase()}</span>
+            <span style="font-size:9.5px; color:#64748b; letter-spacing:0.08em;">${floorLabel} · SEED ${seed.toUpperCase()}</span>
           </div>
           <div class="relic-chips-tray">
-            <span style="font-size:8.5px; color:#64748b; font-weight:700;">TACTICAL RELICS:</span>
+            <span style="font-size:8.5px; color:#64748b; font-weight:700;">TACTICAL STATUS:</span>
             ${relicsHtml}
           </div>
         </div>
@@ -218,14 +249,21 @@
       }
     },
 
-    bindCombatTelemetry: function() {
+    bindCombatTelemetry: function(floor, seed) {
       var self = this;
       setTimeout(function() {
         var logFn = window.addLog || window.log || function(msg) { console.log(msg); };
 
-        if (self.activeAnomaly) {
+        if (self.activeSpireMod) {
+          logFn('▲ [ENDLESS SPIRE TELEMETRY] Environmental mutator: ' + self.activeSpireMod.name.toUpperCase());
+          logFn('▲ [MUTATOR DETAIL] ' + self.activeSpireMod.desc);
+        } else if (self.activeAnomaly) {
           logFn('› [LEYLINE TELEMETRY] Environmental anomaly active: ' + self.activeAnomaly.name.toUpperCase());
           logFn('› [LEYLINE EFFECT] ' + self.activeAnomaly.desc);
+        }
+
+        if (self.activeEliteAffix) {
+          logFn('☠ [WARNING: ELITE UNIT DETECTED] ' + self.activeEliteAffix.name + ': ' + self.activeEliteAffix.desc, 'w');
         }
 
         var hasBrokenGate = self.activeRelics.some(function(r) { return r.id === 'relic_broken_gate'; });
@@ -249,6 +287,14 @@
           }
         }
 
+        // Apply Spire combat mutator hooks to enemy if battle runtime exposed
+        if (window.EndlessSpire && window.EndlessSpire.isSpireFloor(floor) && window.enemy) {
+          window.EndlessSpire.applySpireCombatMutators(window.enemy, floor, seed);
+          if (typeof window.renderEnemy === 'function') {
+            window.renderEnemy();
+          }
+        }
+
         self.interceptCombatActions();
       }, 350);
     },
@@ -264,23 +310,37 @@
         btn.addEventListener('click', function() {
           var label = (btn.textContent || '').toUpperCase();
           var logFn = window.addLog || window.log;
-          if (!logFn || !self.activeAnomaly) return;
+          if (!logFn) return;
 
-          if (label.indexOf('THERMAL') !== -1 || label.indexOf('HEAT') !== -1) {
-            if (self.activeAnomaly.id === 'MOD_THERMAL_SURGE') {
-              logFn('› [LEYLINE PULSE] Thermal Surge superheats the discharge (+35% thermal output)!', 'w');
+          if (self.activeSpireMod) {
+            if (self.activeSpireMod.id === 'SPIRE_CORROSIVE_STATIC') {
+              if (label.indexOf('VOID') !== -1) {
+                logFn('▲ [SPIRE STATIC] Corrosive static amplifies Void discharge (+20%)!', 'p');
+              }
+            } else if (self.activeSpireMod.id === 'SPIRE_THERMAL_INVERSION') {
+              if (label.indexOf('THERMAL') !== -1 || label.indexOf('HEAT') !== -1) {
+                logFn('▲ [SPIRE INVERSION] Thermal strike inverts into sub-zero frost shock!', 'i');
+              }
             }
-          } else if (label.indexOf('VOLT') !== -1 || label.indexOf('ELEC') !== -1) {
-            if (self.activeAnomaly.id === 'MOD_CORRUPT_LEY') {
-              logFn('› [LEYLINE STATIC] Corrupted leylines discharge static feedback through flux coils.', 'c');
-            }
-          } else if (label.indexOf('CRYO') !== -1 || label.indexOf('COLD') !== -1) {
-            if (self.activeAnomaly.id === 'MOD_CRYO_STASIS') {
-              logFn('› [LEYLINE STASIS] Cryo stasis pulse dampens hostile cognitive velocity.', 'i');
-            }
-          } else if (label.indexOf('VOID') !== -1 || label.indexOf('ENTROPY') !== -1) {
-            if (self.activeAnomaly.id === 'MOD_VOID_LEAK') {
-              logFn('› [LEYLINE VOID] Void leakage accelerates entropy drain across the sector.', 'p');
+          }
+
+          if (self.activeAnomaly) {
+            if (label.indexOf('THERMAL') !== -1 || label.indexOf('HEAT') !== -1) {
+              if (self.activeAnomaly.id === 'MOD_THERMAL_SURGE') {
+                logFn('› [LEYLINE PULSE] Thermal Surge superheats the discharge (+35% thermal output)!', 'w');
+              }
+            } else if (label.indexOf('VOLT') !== -1 || label.indexOf('ELEC') !== -1) {
+              if (self.activeAnomaly.id === 'MOD_CORRUPT_LEY') {
+                logFn('› [LEYLINE STATIC] Corrupted leylines discharge static feedback through flux coils.', 'c');
+              }
+            } else if (label.indexOf('CRYO') !== -1 || label.indexOf('COLD') !== -1) {
+              if (self.activeAnomaly.id === 'MOD_CRYO_STASIS') {
+                logFn('› [LEYLINE STASIS] Cryo stasis pulse dampens hostile cognitive velocity.', 'i');
+              }
+            } else if (label.indexOf('VOID') !== -1 || label.indexOf('ENTROPY') !== -1) {
+              if (self.activeAnomaly.id === 'MOD_VOID_LEAK') {
+                logFn('› [LEYLINE VOID] Void leakage accelerates entropy drain across the sector.', 'p');
+              }
             }
           }
         }, false);

@@ -1,16 +1,19 @@
 /* ============================================================================
- * endless_spire.js — Silicon Purgatory :: Endless Abyssal Spire Mode
+ * endless_spire.js — Silicon Purgatory :: Endless Abyssal Spire Mode & Combat Mutators
  * Zero-dependency, self-contained ES6 module. Exposes window.EndlessSpire.
  * Implements infinite floor descent (Floors 11+), adaptive enemy scaling,
- * extraction beacon risk/reward multiplier mechanics, and local leaderboard telemetry.
+ * elite abyssal modifier affixes, combat telemetry hooks, extraction beacon mechanics,
+ * and high-watermark local leaderboard tracking.
  * ============================================================================ */
 (function(root) {
   'use strict';
 
   var STORAGE_KEY = 'silicon_purgatory_spire_records';
 
+  // Base Spire Environmental Modifiers
   var SPIRE_MODIFIERS = [
     {
+      id: 'SPIRE_FLUX_CONDENSE',
       name: 'FLUX CONDENSATION',
       badge: 'CONDENSATION',
       desc: 'Abyssal gravity doubles SP costs but increases critical strike rate.',
@@ -18,6 +21,7 @@
       bg: '#04121a'
     },
     {
+      id: 'SPIRE_CORROSIVE_STATIC',
       name: 'CORROSIVE STATIC',
       badge: 'STATIC',
       desc: 'Ambient voltage chips 2% integrity every 5 turns; Void attacks +20% damage.',
@@ -25,6 +29,7 @@
       bg: '#141005'
     },
     {
+      id: 'SPIRE_THERMAL_INVERSION',
       name: 'THERMAL INVERSION',
       badge: 'INVERSION',
       desc: 'Thermal elements deal frost damage; kinetic resistance reduced across all units.',
@@ -32,6 +37,7 @@
       bg: '#18040a'
     },
     {
+      id: 'SPIRE_SINGULARITY_ECHO',
       name: 'SINGULARITY ECHO',
       badge: 'SINGULARITY',
       desc: 'Actions generate Press Turn resonance; enemies gain 1 additional action cycle.',
@@ -39,11 +45,71 @@
       bg: '#12051a'
     },
     {
+      id: 'SPIRE_APOCALYPSE_PURGE',
       name: 'APOCALYPSE PURGE',
       badge: 'APOCALYPSE',
       desc: 'Maximum depth entropy. Archon residual radiation surges across all hostiles.',
       color: '#ff0055',
       bg: '#20020d'
+    }
+  ];
+
+  // Procedural Elite Enemy Variant Affixes for Spire Encounters
+  var ELITE_AFFIXES = [
+    {
+      id: 'AFFIX_DREAD_WEAVER',
+      name: 'DREAD-WEAVER',
+      tag: '[ELITE: DREAD]',
+      color: '#a855f7',
+      hpBonus: 1.35,
+      atkBonus: 1.25,
+      cycleBonus: 1,
+      affShift: { void: 'drain', kinetic: 'res' },
+      desc: 'Radiates cognitive dread. Gains +1 Press Turn cycle and absorbs Void damage.'
+    },
+    {
+      id: 'AFFIX_FROST_BOUND',
+      name: 'GLACIAL BULWARK',
+      tag: '[ELITE: GLACIAL]',
+      color: '#38bdf8',
+      hpBonus: 1.45,
+      atkBonus: 1.15,
+      cycleBonus: 0,
+      affShift: { cryo: 'drain', thermal: 'weak' },
+      desc: 'Reinforced cryo-alloy chassis. Absurdly high integrity, vulnerable to heat.'
+    },
+    {
+      id: 'AFFIX_OVERCHARGED',
+      name: 'OVERCHARGED CORE',
+      tag: '[ELITE: VOLTAIC]',
+      color: '#facc15',
+      hpBonus: 1.25,
+      atkBonus: 1.40,
+      cycleBonus: 1,
+      affShift: { volt: 'drain', void: 'weak' },
+      desc: 'Hyper-frequency reactor. Blistering attack power and extra tactical turn.'
+    },
+    {
+      id: 'AFFIX_INFERNAL_VENT',
+      name: 'INFERNAL PURGER',
+      tag: '[ELITE: PYRO]',
+      color: '#f97316',
+      hpBonus: 1.30,
+      atkBonus: 1.30,
+      cycleBonus: 0,
+      affShift: { thermal: 'drain', cryo: 'weak' },
+      desc: 'Overheated exhaust coils incinerate incoming kinetic blows.'
+    },
+    {
+      id: 'AFFIX_ENTROPY_NULL',
+      name: 'ENTROPIC ARCHON-SHADOW',
+      tag: '[ELITE: NULL-SHADOW]',
+      color: '#ff2b44',
+      hpBonus: 1.50,
+      atkBonus: 1.35,
+      cycleBonus: 1,
+      affShift: { void: 'nul', kinetic: 'res', thermal: 'res', cryo: 'res' },
+      desc: 'Residual shadow of the Archon. High universal resistances.'
     }
   ];
 
@@ -101,6 +167,7 @@
     var idx = (depth - 1) % SPIRE_MODIFIERS.length;
     var mod = SPIRE_MODIFIERS[idx];
     return {
+      id: mod.id,
       name: mod.name + ' [D+' + depth + ']',
       badge: mod.badge + '+' + depth,
       desc: mod.desc,
@@ -108,6 +175,58 @@
       bg: mod.bg,
       depth: depth
     };
+  }
+
+  function getEliteAffix(seed, floor, enemyIndex) {
+    var depth = getDepth(floor);
+    if (depth <= 0) return null;
+    // Elite chance starts at 20% at depth 1, climbing to 80% at depth 10+
+    var eliteChance = Math.min(0.85, 0.20 + (depth * 0.065));
+    var hashVal = 0;
+    var str = (seed || 'arabella') + '_spire_' + floor + '_' + (enemyIndex || 0);
+    for (var i = 0; i < str.length; i++) {
+      hashVal = (hashVal * 31 + str.charCodeAt(i)) & 0xffffffff;
+    }
+    var roll = Math.abs(hashVal % 100) / 100;
+    if (roll > eliteChance) return null;
+
+    var affixIdx = Math.abs((hashVal >> 4) % ELITE_AFFIXES.length);
+    return ELITE_AFFIXES[affixIdx];
+  }
+
+  function applySpireCombatMutators(enemyObj, floor, seed) {
+    if (!isSpireFloor(floor) || !enemyObj) return enemyObj;
+    var scaling = getScaling(floor);
+    var depth = scaling.depth;
+
+    // Apply baseline Spire stat curves
+    enemyObj.maxhp = Math.round((enemyObj.maxhp || enemyObj.hp || 100) * scaling.hpMultiplier);
+    enemyObj.hp = enemyObj.maxhp;
+    enemyObj.atk = Math.round((enemyObj.atk || 15) * scaling.atkMultiplier);
+
+    // Check for Elite Affix
+    var affix = getEliteAffix(seed, floor, 1);
+    if (affix) {
+      enemyObj.isElite = true;
+      enemyObj.affix = affix;
+      enemyObj.name = affix.tag + ' ' + enemyObj.name;
+      enemyObj.maxhp = Math.round(enemyObj.maxhp * affix.hpBonus);
+      enemyObj.hp = enemyObj.maxhp;
+      enemyObj.atk = Math.round(enemyObj.atk * affix.atkBonus);
+      if (affix.cycleBonus) {
+        enemyObj.bonusCycles = (enemyObj.bonusCycles || 0) + affix.cycleBonus;
+      }
+      if (affix.affShift) {
+        enemyObj.aff = enemyObj.aff || {};
+        for (var el in affix.affShift) {
+          enemyObj.aff[el] = affix.affShift[el];
+        }
+      }
+    }
+
+    enemyObj.spireDepth = depth;
+    enemyObj.relicMultiplier = scaling.relicMultiplier;
+    return enemyObj;
   }
 
   function loadRecords() {
@@ -240,10 +359,14 @@
     isSpireFloor: isSpireFloor,
     getScaling: getScaling,
     getSpireModifier: getSpireModifier,
+    getEliteAffix: getEliteAffix,
+    applySpireCombatMutators: applySpireCombatMutators,
     loadRecords: loadRecords,
     saveRecords: saveRecords,
     recordRun: recordRun,
-    renderRecordsModal: renderRecordsModal
+    renderRecordsModal: renderRecordsModal,
+    SPIRE_MODIFIERS: SPIRE_MODIFIERS,
+    ELITE_AFFIXES: ELITE_AFFIXES
   };
 
 })(typeof window !== 'undefined' ? window : this);
