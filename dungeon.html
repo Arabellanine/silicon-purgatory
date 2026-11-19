@@ -23,7 +23,7 @@
   .sigil::after{content:'';width:10px;height:10px;background:var(--crimson);}
   .title{font-size:13px;font-weight:800;letter-spacing:0.18em;color:#fff;}
   .subtitle{font-size:9px;color:var(--dim);letter-spacing:0.12em;}
-  .stats-bar{display:flex;gap:10px;align-items:center;font-size:10px;}
+  .stats-bar{display:flex;gap:8px;align-items:center;font-size:10px;flex-wrap:wrap;}
   .stat-pill{background:#06080d;border:1px solid var(--panel-border);padding:4px 8px;display:flex;gap:6px;}
   .stat-label{color:var(--dim);}
   .stat-val{color:var(--cyan);font-weight:700;}
@@ -31,6 +31,8 @@
   .btn:hover{border-color:var(--cyan);color:#fff;}
   .btn-crimson{background:var(--crimson-dim);border-color:var(--crimson);color:#fff;}
   .btn-crimson:hover{background:var(--crimson);box-shadow:0 0 12px rgba(255,43,78,.5);}
+  .btn-cyan{background:var(--cyan-dim);border-color:var(--cyan);color:#fff;}
+  .btn-cyan:hover{background:var(--cyan);color:#000;box-shadow:0 0 12px rgba(73,226,255,.5);}
   #viewport-wrap{flex:1;position:relative;display:flex;overflow:hidden;background:#000;}
   #game-canvas{width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;display:block;}
   #radar-panel{position:absolute;top:12px;right:12px;background:rgba(12,15,23,0.92);border:1px solid var(--panel-border);padding:8px;display:flex;flex-direction:column;gap:6px;width:160px;backdrop-filter:blur(4px);z-index:5;}
@@ -46,10 +48,10 @@
   .t-label{color:var(--dim);}
   .t-val{color:var(--ink);font-weight:700;text-align:right;}
   #dialog-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.75);display:none;align-items:center;justify-content:center;z-index:20;backdrop-filter:blur(2px);}
-  #dialog-card{background:var(--panel);border:2px solid var(--crimson);padding:20px;max-width:400px;width:90%;box-shadow:0 0 30px rgba(255,43,78,0.4);display:flex;flex-direction:column;gap:12px;}
+  #dialog-card{background:var(--panel);border:2px solid var(--crimson);padding:20px;max-width:440px;width:90%;box-shadow:0 0 30px rgba(255,43,78,0.4);display:flex;flex-direction:column;gap:12px;}
   .d-title{color:var(--crimson);font-size:12px;font-weight:800;letter-spacing:0.15em;}
   .d-body{font-size:11px;color:var(--ink);line-height:1.5;}
-  .d-actions{display:flex;gap:8px;justify-content:flex-end;}
+  .d-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:4px;}
   #dpad{position:absolute;bottom:16px;right:16px;display:grid;grid-template-columns:40px 40px 40px;grid-template-rows:40px 40px 40px;gap:4px;z-index:6;}
   .d-btn{background:rgba(18,24,36,0.85);border:1px solid var(--panel-border);color:var(--cyan);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;user-select:none;}
   .d-btn:active{background:var(--cyan);color:#000;}
@@ -72,6 +74,8 @@
       <button class="btn" id="btn-next-floor">NEXT FLOOR ▶</button>
       <button class="btn" id="btn-regen">⟳ REGEN</button>
       <button class="btn btn-crimson" id="btn-boss-toggle">⚡ BOSS CHAMBER</button>
+      <button class="btn btn-crimson" id="btn-spire-toggle">🌀 ABYSSAL SPIRE</button>
+      <button class="btn" id="btn-spire-records">🏆 RECORDS</button>
       <a href="index.html" class="btn btn-crimson" style="text-decoration:none;">⚔️ ARENA</a>
     </div>
   </header>
@@ -99,6 +103,8 @@
       <span class="t-label">CLEARED</span><span class="t-val" id="t-cleared">0%</span>
       <span class="t-label">MODE</span><span class="t-val" id="t-mode" style="color:var(--gold);">NORMAL</span>
       <span class="t-label">ANOMALY</span><span class="t-val" id="t-anomaly" style="color:var(--crimson);">NONE</span>
+      <span class="t-label">SPIRE DEPTH</span><span class="t-val" id="t-spire-depth" style="color:var(--cyan);">OFFLINE</span>
+      <span class="t-label">EXTRACTION</span><span class="t-val" id="t-spire-extract" style="color:var(--gold);">1.00x</span>
     </div>
 
     <div id="dpad">
@@ -111,7 +117,7 @@
       <div id="dialog-card">
         <div class="d-title" id="d-title">! ENCOUNTER !</div>
         <div class="d-body" id="d-body">DAEMON HOSTILE ENGAGED.</div>
-        <div class="d-actions">
+        <div class="d-actions" id="d-actions">
           <button class="btn" id="d-flee">DISENGAGE</button>
           <button class="btn btn-crimson" id="d-battle">ENGAGE COMBAT</button>
         </div>
@@ -123,6 +129,7 @@
 <script src="boss.js"></script>
 <script src="abyss_modifiers.js"></script>
 <script src="archon.js"></script>
+<script src="endless_spire.js"></script>
 <script>
 (function(){
   'use strict';
@@ -147,6 +154,8 @@
   var rooms = [];
   var hostiles = [];
   var activeModifier = null;
+  var spireBeacon = null;
+  var unextractedFragments = 0;
   var player = { gx: 24, gy: 18, rx: 24 * TILE * SCALE, ry: 18 * TILE * SCALE, moving: false, dir: 's' };
 
   function mulberry32(a) {
@@ -184,7 +193,7 @@
     } else {
       banner.style.borderColor = activeModifier.color || 'var(--crimson)';
       tag.style.color = activeModifier.color || 'var(--crimson)';
-      tag.textContent = 'ANOMALY: ' + activeModifier.name;
+      tag.textContent = (currentFloor >= 11 ? 'SPIRE ANOMALY: ' : 'ANOMALY: ') + activeModifier.name;
       desc.textContent = activeModifier.desc || 'Active environmental interference.';
       tAnomaly.textContent = activeModifier.badge || activeModifier.name;
       tAnomaly.style.color = activeModifier.color || 'var(--crimson)';
@@ -198,7 +207,7 @@
       floorGrid[y] = new Array(MAP_W).fill(WALL);
     }
     rooms = [];
-    var roomCount = 6;
+    var roomCount = (currentFloor >= 11) ? 7 : 6;
     for (var r = 0; r < roomCount; r++) {
       var rw = Math.floor(rng() * 5 + 6);
       var rh = Math.floor(rng() * 5 + 5);
@@ -230,10 +239,22 @@
     player.ry = player.gy * TILE * SCALE;
 
     hostiles = [];
+    var isSpire = currentFloor >= 11;
+    var scaling = window.EndlessSpire ? window.EndlessSpire.getScaling(currentFloor) : { hpMultiplier: 1, atkMultiplier: 1, relicMultiplier: 1 };
+
     for (var h = 1; h < rooms.length; h++) {
       var rmH = rooms[h];
+      var baseHp = Math.round(120 * scaling.hpMultiplier);
       hostiles.push({
-        type: { name: 'VOID STALKER', col: '#ff2b4e', col2: '#7a1226', glow: '#ff6b7e' },
+        type: { 
+          name: isSpire ? ('ABYSSAL SPECTER // D+' + (currentFloor - 10)) : 'VOID STALKER', 
+          col: isSpire ? '#a35aff' : '#ff2b4e', 
+          col2: isSpire ? '#3d1666' : '#7a1226', 
+          glow: isSpire ? '#d19eff' : '#ff6b7e',
+          hp: baseHp,
+          maxHp: baseHp,
+          scaling: scaling
+        },
         room: rmH,
         gx: rmH.cx,
         gy: rmH.cy,
@@ -244,16 +265,40 @@
       });
     }
 
-    if (window.AbyssModifiers) {
-      activeModifier = window.AbyssModifiers.getFloorModifier(seed, currentFloor);
+    if (isSpire) {
+      var lastRoom = rooms[rooms.length - 1];
+      spireBeacon = { gx: lastRoom.cx, gy: lastRoom.cy };
+      unextractedFragments += Math.round(scaling.fragmentRewardBase);
+      if (window.EndlessSpire) {
+        activeModifier = window.EndlessSpire.getSpireModifier(seed, currentFloor);
+      }
     } else {
-      activeModifier = null;
+      spireBeacon = null;
+      if (window.AbyssModifiers) {
+        activeModifier = window.AbyssModifiers.getFloorModifier(seed, currentFloor);
+      } else {
+        activeModifier = null;
+      }
     }
     updateLeylineDisplay();
 
-    document.getElementById('t-mode').textContent = 'STANDARD';
-    document.getElementById('t-mode').style.color = 'var(--cyan)';
-    document.getElementById('floor-indicator').textContent = 'FLOOR ' + (currentFloor < 10 ? '0' + currentFloor : currentFloor) + ' · PATROL SECTOR';
+    var modeEl = document.getElementById('t-mode');
+    var indEl = document.getElementById('floor-indicator');
+    if (isSpire) {
+      modeEl.textContent = 'SPIRE [D+' + (currentFloor - 10) + ']';
+      modeEl.style.color = 'var(--cyan)';
+      indEl.textContent = 'FLOOR ' + currentFloor + ' // ENDLESS ABYSSAL SPIRE [DEPTH +' + (currentFloor - 10) + ']';
+      document.getElementById('t-spire-depth').textContent = '+' + (currentFloor - 10);
+      document.getElementById('t-spire-depth').style.color = 'var(--cyan)';
+      document.getElementById('t-spire-extract').textContent = scaling.relicMultiplier + 'x';
+    } else {
+      modeEl.textContent = 'STANDARD';
+      modeEl.style.color = 'var(--cyan)';
+      indEl.textContent = 'FLOOR ' + (currentFloor < 10 ? '0' + currentFloor : currentFloor) + ' · PATROL SECTOR';
+      document.getElementById('t-spire-depth').textContent = 'OFFLINE';
+      document.getElementById('t-spire-depth').style.color = 'var(--dim)';
+      document.getElementById('t-spire-extract').textContent = '1.00x';
+    }
   }
 
   function initBossDungeon(seed) {
@@ -273,7 +318,6 @@
     player.rx = player.gx * TILE * SCALE;
     player.ry = player.gy * TILE * SCALE;
 
-    // Check if Tier 4 Archon is triggered (Floor 10+ or seeded archon)
     var bossObj = floorData.bossEntity;
     if (window.ArchonModule && currentFloor >= 10) {
       var archonKey = (hashSeed(seed) % 2 === 0) ? 'malphas_prime' : 'decarabia_void';
@@ -288,6 +332,7 @@
     }
 
     hostiles = [bossObj].concat(floorData.minions);
+    spireBeacon = null;
 
     if (window.AbyssModifiers) {
       activeModifier = window.AbyssModifiers.getFloorModifier(seed, currentFloor);
@@ -299,13 +344,16 @@
     document.getElementById('t-mode').textContent = bossObj.isArchon ? 'ARCHON SANCTUM' : 'BOSS SANCTUM';
     document.getElementById('t-mode').style.color = 'var(--crimson)';
     document.getElementById('floor-indicator').textContent = 'FLOOR ' + (currentFloor < 10 ? '0' + currentFloor : currentFloor) + ' // ' + (bossObj.isArchon ? 'ABYSSAL ARCHON' : 'PRIME CHAMBER');
+    document.getElementById('t-spire-depth').textContent = 'OFFLINE';
+    document.getElementById('t-spire-depth').style.color = 'var(--dim)';
+    document.getElementById('t-spire-extract').textContent = '1.00x';
   }
 
   function regen(seed) {
     currentSeed = seed || ('DEMON-' + Math.floor(Math.random()*9000 + 1000));
     document.getElementById('seed-disp').textContent = currentSeed;
     document.getElementById('floor-disp').textContent = (currentFloor < 10 ? '0' + currentFloor : currentFloor);
-    if (isBossMode) {
+    if (isBossMode && currentFloor < 11) {
       initBossDungeon(currentSeed);
     } else {
       initNormalDungeon(currentSeed);
@@ -337,6 +385,11 @@
   }
 
   function checkEncounters() {
+    if (spireBeacon && player.gx === spireBeacon.gx && player.gy === spireBeacon.gy) {
+      triggerExtractionTerminal();
+      return;
+    }
+
     for (var i = 0; i < hostiles.length; i++) {
       var h = hostiles[i];
       if (Math.abs(h.gx - player.gx) <= 1 && Math.abs(h.gy - player.gy) <= 1) {
@@ -346,10 +399,61 @@
     }
   }
 
+  function triggerExtractionTerminal() {
+    var scaling = window.EndlessSpire ? window.EndlessSpire.getScaling(currentFloor) : { depth: currentFloor - 10, relicMultiplier: 1.25, dangerTier: 'ABYSSAL' };
+    var finalFrags = Math.floor(unextractedFragments * scaling.relicMultiplier);
+
+    var dialog = document.getElementById('dialog-overlay');
+    var dTitle = document.getElementById('d-title');
+    var dBody = document.getElementById('d-body');
+    var dActions = document.getElementById('d-actions');
+
+    dTitle.textContent = '🌀 ABYSSAL EXTRACTION BEACON // DEPTH +' + scaling.depth;
+    dTitle.style.color = '#49e2ff';
+    dBody.innerHTML =
+      '<div style="font-size:11px;line-height:1.6;">' +
+      '<strong style="color:#ffc14d;">RESCUE FREQUENCY ESTABLISHED.</strong><br/>' +
+      'Threat Level: <span style="color:#ff2b4e;font-weight:700;">' + scaling.dangerTier + '</span><br/>' +
+      'Accumulated Soul Fragments: <span style="color:#49e2ff;font-weight:700;">' + unextractedFragments + '</span><br/>' +
+      'Extraction Multiplier: <span style="color:#ffc14d;font-weight:700;">' + scaling.relicMultiplier + 'x</span><br/>' +
+      'Yield Upon Extraction: <strong style="color:#fff;font-size:12px;">' + finalFrags + ' SOUL FRAGMENTS</strong><br/>' +
+      '<p style="color:#5a6478;font-size:9.5px;margin-top:6px;">Decide mortal: Cash out your spoils into permanent storage, or risk an abyssal party wipe to plunge deeper.</p>' +
+      '</div>';
+
+    dActions.innerHTML =
+      '<button class="btn btn-cyan" id="btn-do-extract">⚡ EXTRACT & SECURE (' + finalFrags + ')</button>' +
+      '<button class="btn btn-crimson" id="btn-do-descend">DESCEND DEEPER ▶</button>';
+
+    dialog.style.display = 'flex';
+
+    document.getElementById('btn-do-extract').onclick = function() {
+      if (window.EndlessSpire) {
+        window.EndlessSpire.recordRun(currentFloor, finalFrags, scaling.relicMultiplier, 'EXTRACTED');
+      }
+      unextractedFragments = 0;
+      dialog.style.display = 'none';
+      currentFloor = 10;
+      isBossMode = true;
+      regen(currentSeed);
+    };
+
+    document.getElementById('btn-do-descend').onclick = function() {
+      dialog.style.display = 'none';
+      currentFloor += 1;
+      regen(currentSeed);
+    };
+  }
+
   function triggerEncounter(h) {
     var dialog = document.getElementById('dialog-overlay');
     var dTitle = document.getElementById('d-title');
     var dBody = document.getElementById('d-body');
+    var dActions = document.getElementById('d-actions');
+
+    dActions.innerHTML =
+      '<button class="btn" id="d-flee">DISENGAGE</button>' +
+      '<button class="btn btn-crimson" id="d-battle">ENGAGE COMBAT</button>';
+
     if (h.isArchon) {
       dTitle.textContent = '⚠️ SUPREME DANGER // ARCHON COGNITION DETECTED';
       dTitle.style.color = '#ff0055';
@@ -366,31 +470,43 @@
     } else {
       dTitle.textContent = '! ENCOUNTER !';
       dTitle.style.color = 'var(--gold)';
-      dBody.innerHTML = 'Hostile unit: <strong>' + (h.type.name || 'SANCTUM WARDEN') + '</strong>';
+      var scalingInfo = h.type.scaling ? (' · Tier: Depth +' + h.type.scaling.depth) : '';
+      dBody.innerHTML = 'Hostile unit: <strong>' + (h.type.name || 'SANCTUM WARDEN') + '</strong>' + scalingInfo +
+        '<br/><span style="color:var(--cyan);font-size:9.5px;">HP: ' + h.type.hp + ' · Multiplier Active</span>';
     }
     dialog.style.display = 'flex';
-  }
 
-  document.getElementById('d-flee').onclick = function(){
-    document.getElementById('dialog-overlay').style.display = 'none';
-    player.gx = Math.max(1, player.gx - 1);
-    player.gy = Math.max(1, player.gy + 1);
-  };
-  document.getElementById('d-battle').onclick = function(){
-    window.location.href = 'index.html';
-  };
+    document.getElementById('d-flee').onclick = function(){
+      document.getElementById('dialog-overlay').style.display = 'none';
+      player.gx = Math.max(1, player.gx - 1);
+      player.gy = Math.max(1, player.gy + 1);
+    };
+    document.getElementById('d-battle').onclick = function(){
+      window.location.href = 'index.html';
+    };
+  }
 
   document.getElementById('btn-regen').onclick = function(){
     regen();
   };
   document.getElementById('btn-next-floor').onclick = function(){
-    currentFloor = (currentFloor >= 12) ? 1 : currentFloor + 1;
+    currentFloor = (currentFloor >= 20) ? 1 : currentFloor + 1;
     regen(currentSeed);
   };
   document.getElementById('btn-boss-toggle').onclick = function(){
     isBossMode = !isBossMode;
     this.textContent = isBossMode ? '⚡ STANDARD FLOOR' : '⚡ BOSS CHAMBER';
     regen(currentSeed);
+  };
+  document.getElementById('btn-spire-toggle').onclick = function(){
+    currentFloor = 11;
+    isBossMode = false;
+    regen(currentSeed);
+  };
+  document.getElementById('btn-spire-records').onclick = function(){
+    if (window.EndlessSpire) {
+      window.EndlessSpire.renderRecordsModal();
+    }
   };
 
   window.addEventListener('keydown', function(e){
@@ -451,7 +567,7 @@
           ctx.strokeStyle = '#182038';
           ctx.strokeRect(screenX, screenY, ts, ts);
         } else if (tile === FLOOR) {
-          ctx.fillStyle = (activeModifier && activeModifier.bg) ? '#080c16' : '#080c16';
+          ctx.fillStyle = (activeModifier && activeModifier.bg) ? activeModifier.bg : '#080c16';
           ctx.fillRect(screenX, screenY, ts, ts);
           ctx.fillStyle = (activeModifier && activeModifier.color) ? activeModifier.color : '#0d1322';
           ctx.globalAlpha = activeModifier ? 0.08 : 1.0;
@@ -462,6 +578,26 @@
           ctx.fillRect(screenX, screenY, ts, ts);
         }
       }
+    }
+
+    // Draw Extraction Beacon if active in Spire mode
+    if (spireBeacon) {
+      var bx = camX + spireBeacon.gx * ts;
+      var by = camY + spireBeacon.gy * ts;
+      var pulse = (Math.sin(now * 0.005) + 1) * 0.5;
+      ctx.strokeStyle = '#49e2ff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(bx + ts/2, by + ts/2, ts * 0.6 + pulse * 6, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(73, 226, 255, 0.25)';
+      ctx.beginPath();
+      ctx.arc(bx + ts/2, by + ts/2, ts * 0.4 + pulse * 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffc14d';
+      ctx.fillRect(bx + ts/2 - 4, by + ts/2 - 4, 8, 8);
     }
 
     hostiles.forEach(function(h){
@@ -518,6 +654,11 @@
           radarCtx.fillRect(x * rw, y * rh, rw, rh);
         }
       }
+    }
+
+    if (spireBeacon) {
+      radarCtx.fillStyle = '#49e2ff';
+      radarCtx.fillRect(spireBeacon.gx * rw - 1, spireBeacon.gy * rh - 1, 4, 4);
     }
 
     hostiles.forEach(function(h){
