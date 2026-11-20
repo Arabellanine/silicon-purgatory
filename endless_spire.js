@@ -265,6 +265,11 @@
       if (fragmentsExtracted > records.highestFragmentsExtracted) {
         records.highestFragmentsExtracted = fragmentsExtracted;
       }
+      try {
+        if (typeof window !== 'undefined' && window.SiliconProgression && typeof window.SiliconProgression.recordSpireExtraction === 'function') {
+          window.SiliconProgression.recordSpireExtraction(floor, fragmentsExtracted, multiplier);
+        }
+      } catch (e) {}
     }
     if (depth > records.maxDepth) {
       records.maxDepth = depth;

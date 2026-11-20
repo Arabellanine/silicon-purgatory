@@ -6,7 +6,7 @@
  * with itself overclocks it. Unknown pairings fall back to a stat-averaged
  * hybrid so the engine never returns null for two valid parents.
  *
- * Tier 3 recipe synthesis, Tier 4 Transcendent Archon recipes, & Archon relic unlock integration.
+ * Tier 3 recipe synthesis, Tier 4 Transcendent Archons, & Tier 5 Apex Spire Demiurge recipes.
  */
 (function (root) {
   'use strict';
@@ -88,7 +88,7 @@
   };
 
   /* ------------------------------------------------------------------ *
-   * Fusion templates (Tier 2-4).
+   * Fusion templates (Tier 2-5).
    * ------------------------------------------------------------------ */
   var FUSED_DB = {
     frostfire_golem: {
@@ -168,6 +168,26 @@
       catalyst: 'relic_abyssal_unification',
       catalystName: 'Abyssal Unification (Both Archon Relics)',
       lore: 'The apex synthesis of Circuit Gate and Astral Eye. Sovereign of infinite cycles.'
+    },
+
+    /* Tier 5 Apex Spire Demiurges (Requires Abyssal Spire Core Relics) */
+    chronos_devourer: {
+      id: 'chronos_devourer', name: 'CHRONOS VOID-DEVOURER', tier: 5,
+      hp: 540, sp: 260, atk: 92, col: '#38bdf8', col2: '#0369a1', glow: '#7dd3fc',
+      horns: true, aff: aff('res', 'drain', 'drain', 'nul', 'drain'),
+      skills: ['void', 'cryo', 'volt', 'kinetic'], inheritedSkill: 'void',
+      catalyst: 'relic_spire_singularity',
+      catalystName: 'Abyssal Singularity Core (Spire Depth +5)',
+      lore: 'An eternal chronometric sovereign forged from Spire temporal distortions. Devours cognitive cycles.'
+    },
+    apocalypse_architect: {
+      id: 'apocalypse_architect', name: 'APOCALYPSE ARCHITECT', tier: 5,
+      hp: 640, sp: 320, atk: 108, col: '#f43f5e', col2: '#881337', glow: '#fb7185',
+      horns: true, aff: aff('drain', 'drain', 'res', 'drain', 'nul'),
+      skills: ['void', 'thermal', 'volt', 'kinetic'], inheritedSkill: 'void',
+      catalyst: 'relic_apocalypse_matrix',
+      catalystName: 'Apocalypse Overdrive Matrix (Spire Depth +10)',
+      lore: 'The supreme architect of cognitive collapse. Weaves entropic cataclysms across infinite depths.'
     }
   };
 
@@ -193,6 +213,13 @@
   RECIPES[key('void_archon', 'glacier_sentinel')]    = 'decarabia_watcher';
   RECIPES[key('archon_prime', 'void_archon')]        = 'ouroboros_demiurge';
   RECIPES[key('malphas_prime', 'decarabia_watcher')] = 'ouroboros_demiurge';
+
+  /* Tier 5 Apex Spire Recipes */
+  RECIPES[key('ouroboros_demiurge', 'void_archon')]      = 'chronos_devourer';
+  RECIPES[key('ouroboros_demiurge', 'archon_prime')]     = 'chronos_devourer';
+  RECIPES[key('ouroboros_demiurge', 'malphas_prime')]     = 'apocalypse_architect';
+  RECIPES[key('ouroboros_demiurge', 'decarabia_watcher')]  = 'apocalypse_architect';
+  RECIPES[key('chronos_devourer', 'ouroboros_demiurge')]   = 'apocalypse_architect';
 
   /* ------------------------------------------------------------------ *
    * Internals
@@ -269,18 +296,19 @@
         var ctx = new AudioCtx();
         var osc = ctx.createOscillator();
         var gain = ctx.createGain();
-        var isTier4 = (tier || 3) >= 4;
-        osc.type = isTier4 ? 'sine' : 'triangle';
-        var baseFreq = isTier4 ? 329.63 : 261.63; // E4 or C4
+        var isTier5 = (tier || 3) >= 5;
+        var isTier4 = (tier || 3) === 4;
+        osc.type = isTier5 ? 'sawtooth' : (isTier4 ? 'sine' : 'triangle');
+        var baseFreq = isTier5 ? 440.00 : (isTier4 ? 329.63 : 261.63); // A4, E4, or C4
         osc.frequency.setValueAtTime(baseFreq, ctx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(baseFreq * 2, ctx.currentTime + 0.2);
-        osc.frequency.exponentialRampToValueAtTime(baseFreq * 4, ctx.currentTime + 0.4);
-        gain.gain.setValueAtTime(0.18, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+        osc.frequency.exponentialRampToValueAtTime(baseFreq * (isTier5 ? 6 : 4), ctx.currentTime + 0.4);
+        gain.gain.setValueAtTime(isTier5 ? 0.22 : 0.18, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + (isTier5 ? 0.7 : 0.5));
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start();
-        osc.stop(ctx.currentTime + 0.55);
+        osc.stop(ctx.currentTime + (isTier5 ? 0.75 : 0.55));
       }
     } catch (e) {}
 
@@ -289,13 +317,14 @@
         var el = document.getElementById('fusion-modal') || document.querySelector('.fusion-panel') || document.body;
         if (el) {
           el.style.transition = 'box-shadow 0.4s ease, border-color 0.4s ease';
-          var isT4 = (tier || 3) >= 4;
-          el.style.borderColor = isT4 ? '#10b981' : '#eab308';
-          el.style.boxShadow = isT4 ? '0 0 45px rgba(16, 185, 129, 0.8)' : '0 0 35px rgba(234, 179, 8, 0.6)';
+          var isT5 = (tier || 3) >= 5;
+          var isT4 = (tier || 3) === 4;
+          el.style.borderColor = isT5 ? '#f43f5e' : (isT4 ? '#10b981' : '#eab308');
+          el.style.boxShadow = isT5 ? '0 0 55px rgba(244, 63, 94, 0.9)' : (isT4 ? '0 0 45px rgba(16, 185, 129, 0.8)' : '0 0 35px rgba(234, 179, 8, 0.6)');
           setTimeout(function () {
             el.style.boxShadow = '';
             el.style.borderColor = '';
-          }, 1200);
+          }, 1400);
         }
       }
     } catch (e) {}
@@ -329,6 +358,7 @@
           var p = JSON.parse(raw);
           if (p.inventory && p.inventory.indexOf(relicId) !== -1) return true;
           if (p.activeRelics && p.activeRelics.indexOf(relicId) !== -1) return true;
+          if (p.spireRelics && p.spireRelics.indexOf(relicId) !== -1) return true;
         }
         if (localStorage.getItem('sp_' + relicId) === 'true') return true;
       }
@@ -358,7 +388,17 @@
       }
     }
     
-    if ((res.tier || 1) >= 4) {
+    if ((res.tier || 1) >= 5) {
+      var cat5 = res.catalyst;
+      var cat5Unlocked = cat5 ? hasRelic(cat5) : false;
+      if (!cat5Unlocked) {
+        res.isLocked = true;
+        res.lockReason = 'REQUIRES SPIRE CORE CATALYST: ' + (res.catalystName || 'ABYSSAL SPIRE CORE (FLOOR 15+)').toUpperCase();
+      } else {
+        res.isLocked = false;
+        res.tierUnlockedBadge = 'TIER 5 APEX DEMIURGE SYNTHESIS ACTIVE';
+      }
+    } else if ((res.tier || 1) >= 4) {
       var cat = res.catalyst;
       var catUnlocked = false;
       if (cat === 'relic_abyssal_unification') {

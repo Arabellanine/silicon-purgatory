@@ -3,7 +3,7 @@
  * Module: progression.js
  * Exposes window.SiliconProgression
  * Provides localStorage-backed persistence for soul fragments, Cipher Key,
- * gate state, relic inventory, and fragment-spending actions for Arena & Fusion Chamber.
+ * gate state, relic inventory, endless spire extractions, and fragment-spending actions.
  */
 (function(root) {
   'use strict';
@@ -15,6 +15,9 @@
     soulFragments: 0,
     bossesDefeated: 0,
     archonsDefeated: 0,
+    spireDeepestFloor: 10,
+    spireExtractions: 0,
+    spireRelics: [],
     inventory: [],
     activeRelics: [],
     archonCatalysts: [],
@@ -52,6 +55,9 @@
         relics: state.activeRelics || [],
         catalysts: state.archonCatalysts || [],
         transcendent: state.transcendentFusions || [],
+        spireRelics: state.spireRelics || [],
+        spireDeepestFloor: state.spireDeepestFloor || 10,
+        spireExtractions: state.spireExtractions || 0,
         archonsDefeated: state.archonsDefeated || 0,
         hasCipherKey: !!state.hasCipherKey,
         soulFragments: state.soulFragments || 0,
@@ -110,7 +116,8 @@
       var s = loadState();
       var inv = s.inventory || [];
       var act = s.activeRelics || [];
-      if (inv.indexOf(relicId) !== -1 || act.indexOf(relicId) !== -1) return true;
+      var spir = s.spireRelics || [];
+      if (inv.indexOf(relicId) !== -1 || act.indexOf(relicId) !== -1 || spir.indexOf(relicId) !== -1) return true;
       try {
         if (typeof localStorage !== 'undefined' && localStorage.getItem('sp_' + relicId) === 'true') {
           return true;
@@ -167,6 +174,53 @@
       return s;
     },
 
+    /**
+     * Record an Abyssal Spire extraction run and award Spire Core Relics
+     * @param {number} floor - deepest floor reached during run
+     * @param {number} fragments - total soul fragments extracted
+     * @param {number} multiplier - extraction multiplier achieved
+     */
+    recordSpireExtraction: function(floor, fragments, multiplier) {
+      var s = loadState();
+      s.spireExtractions = (s.spireExtractions || 0) + 1;
+      s.spireDeepestFloor = Math.max(s.spireDeepestFloor || 10, floor || 10);
+      s.soulFragments = Math.max(0, (s.soulFragments || 0) + (fragments || 0));
+
+      if (!s.spireRelics) s.spireRelics = [];
+      if (!s.inventory) s.inventory = [];
+
+      var newRelics = [];
+      // Depth +5 (Floor 15+): Abyssal Singularity Core
+      if (floor >= 15 && s.spireRelics.indexOf('relic_spire_singularity') === -1) {
+        s.spireRelics.push('relic_spire_singularity');
+        s.inventory.push('relic_spire_singularity');
+        newRelics.push('relic_spire_singularity');
+        try { if (typeof localStorage !== 'undefined') localStorage.setItem('sp_relic_spire_singularity', 'true'); } catch (e) {}
+      }
+      // Depth +10 (Floor 20+): Apocalypse Overdrive Matrix
+      if (floor >= 20 && s.spireRelics.indexOf('relic_apocalypse_matrix') === -1) {
+        s.spireRelics.push('relic_apocalypse_matrix');
+        s.inventory.push('relic_apocalypse_matrix');
+        newRelics.push('relic_apocalypse_matrix');
+        try { if (typeof localStorage !== 'undefined') localStorage.setItem('sp_relic_apocalypse_matrix', 'true'); } catch (e) {}
+      }
+      // Depth +15 (Floor 25+): Entropic Archon Crown
+      if (floor >= 25 && s.spireRelics.indexOf('relic_entropic_crown') === -1) {
+        s.spireRelics.push('relic_entropic_crown');
+        s.inventory.push('relic_entropic_crown');
+        newRelics.push('relic_entropic_crown');
+        try { if (typeof localStorage !== 'undefined') localStorage.setItem('sp_relic_entropic_crown', 'true'); } catch (e) {}
+      }
+
+      saveState(s);
+      return {
+        spireDeepestFloor: s.spireDeepestFloor,
+        spireExtractions: s.spireExtractions,
+        soulFragments: s.soulFragments,
+        newRelics: newRelics
+      };
+    },
+
     hasCatalyst: function(catalystId) {
       var s = loadState();
       var cats = s.archonCatalysts || [];
@@ -217,6 +271,9 @@
         relics: s.activeRelics || [],
         catalysts: s.archonCatalysts || [],
         transcendent: s.transcendentFusions || [],
+        spireRelics: s.spireRelics || [],
+        spireDeepestFloor: s.spireDeepestFloor || 10,
+        spireExtractions: s.spireExtractions || 0,
         archonsDefeated: s.archonsDefeated || 0,
         hasCipherKey: !!s.hasCipherKey,
         soulFragments: s.soulFragments || 0,
