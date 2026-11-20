@@ -432,14 +432,96 @@
       }
       unextractedFragments = 0;
       dialog.style.display = 'none';
-      currentFloor = 10;
-      isBossMode = true;
-      regen(currentSeed);
+      renderExtractionSummaryModal(currentFloor, finalFrags, scaling);
     };
 
     document.getElementById('btn-do-descend').onclick = function() {
       dialog.style.display = 'none';
       currentFloor += 1;
+      regen(currentSeed);
+    };
+  }
+
+  function renderExtractionSummaryModal(floor, frags, scaling) {
+    var existing = document.getElementById('spireSummaryModal');
+    if (existing) existing.remove();
+
+    var records = (window.EndlessSpire && window.EndlessSpire.getRecords) ? window.EndlessSpire.getRecords() : {};
+    var depth = scaling ? scaling.depth : Math.max(1, floor - 10);
+    var mult = scaling ? (scaling.relicMultiplier || 1.0) : 1.0;
+
+    var overlay = document.createElement('div');
+    overlay.id = 'spireSummaryModal';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(5,6,8,0.92);backdrop-filter:blur(6px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;font-family:"JetBrains Mono",monospace;';
+
+    var hasSingularity = (records.highestDepth || depth) >= 5;
+    var hasApocalypse = (records.highestDepth || depth) >= 10;
+
+    overlay.innerHTML = `
+      <div style="width:100%;max-width:540px;background:#0a0c12;border:2px solid #a855f7;box-shadow:0 0 30px rgba(168,85,247,0.3);padding:24px;color:#e2e8f0;box-sizing:border-box;">
+        <div style="font-size:10px;font-weight:800;letter-spacing:0.2em;color:#a855f7;margin-bottom:4px;">ABYSSAL EXTRACTION TELEMETRY // SECURED</div>
+        <h2 style="font-size:18px;font-weight:800;letter-spacing:0.05em;margin:0 0 16px 0;color:#fff;">EXTRACTION MISSION COMPLETE</h2>
+        
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+          <div style="background:#111522;border:1px solid #1e293b;padding:12px;text-align:center;">
+            <div style="font-size:9px;color:#94a3b8;font-weight:700;letter-spacing:0.1em;">DEPTH EXTRACTED</div>
+            <div style="font-size:22px;font-weight:800;color:#c084fc;margin-top:4px;">DEPTH +${depth}</div>
+            <div style="font-size:9.5px;color:#64748b;margin-top:2px;">SECTOR FLOOR ${floor}</div>
+          </div>
+          <div style="background:#111522;border:1px solid #1e293b;padding:12px;text-align:center;">
+            <div style="font-size:9px;color:#94a3b8;font-weight:700;letter-spacing:0.1em;">HARVEST RECOVERY</div>
+            <div style="font-size:22px;font-weight:800;color:#38bdf8;margin-top:4px;">+${frags}</div>
+            <div style="font-size:9.5px;color:#64748b;margin-top:2px;">MULTIPLIER ${mult}x</div>
+          </div>
+        </div>
+
+        <div style="background:#111522;border:1px solid #1e293b;padding:12px;margin-bottom:16px;">
+          <div style="font-size:9.5px;font-weight:700;color:#94a3b8;letter-spacing:0.05em;margin-bottom:8px;">LIFETIME TELEMETRY HIGH-WATERMARKS</div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;">
+            <span style="color:#64748b;">RECORD DEPTH:</span>
+            <span style="color:#f59e0b;font-weight:700;">DEPTH +${records.highestDepth || depth}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;">
+            <span style="color:#64748b;">TOTAL SUCCESSFUL EXTRACTIONS:</span>
+            <span style="color:#38bdf8;font-weight:700;">${records.totalExtractions || 1} RUNS</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;">
+            <span style="color:#64748b;">TOTAL SOUL FRAGMENTS SECURED:</span>
+            <span style="color:#10b981;font-weight:700;">${records.totalFragmentsExtracted || frags} FRAGS</span>
+          </div>
+        </div>
+
+        <div style="font-size:9.5px;font-weight:700;color:#94a3b8;letter-spacing:0.05em;margin-bottom:8px;">APEX RELIC CATALYSTS STATUS</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;">
+          <div style="background:${hasSingularity ? 'rgba(168,85,247,0.15)' : '#0f172a'};border:1px solid ${hasSingularity ? '#a855f7' : '#334155'};padding:8px;border-radius:4px;">
+            <div style="font-size:10px;font-weight:700;color:${hasSingularity ? '#c084fc' : '#64748b'};">🌌 SINGULARITY CORE</div>
+            <div style="font-size:8.5px;color:#94a3b8;">${hasSingularity ? 'UNLOCKED (Depth +5)' : 'LOCKED (Depth +5 required)'}</div>
+          </div>
+          <div style="background:${hasApocalypse ? 'rgba(255,0,85,0.15)' : '#0f172a'};border:1px solid ${hasApocalypse ? '#ff0055' : '#334155'};padding:8px;border-radius:4px;">
+            <div style="font-size:10px;font-weight:700;color:${hasApocalypse ? '#ff0055' : '#64748b'};">⚡ APOCALYPSE MATRIX</div>
+            <div style="font-size:8.5px;color:#94a3b8;">${hasApocalypse ? 'UNLOCKED (Depth +10)' : 'LOCKED (Depth +10 required)'}</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <button id="btnSummaryLogs" style="background:#1e1b4b;border:1px solid #a855f7;color:#c084fc;padding:10px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">📊 FLIGHT LOGS</button>
+          <button id="btnSummaryReturn" style="background:#0f172a;border:1px solid #38bdf8;color:#38bdf8;padding:10px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">⚔️ SECTOR 10 COCKPIT</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    document.getElementById('btnSummaryLogs').onclick = function() {
+      if (window.EndlessSpire && typeof window.EndlessSpire.renderRecordsModal === 'function') {
+        window.EndlessSpire.renderRecordsModal();
+      }
+    };
+
+    document.getElementById('btnSummaryReturn').onclick = function() {
+      overlay.remove();
+      currentFloor = 10;
+      isBossMode = true;
       regen(currentSeed);
     };
   }

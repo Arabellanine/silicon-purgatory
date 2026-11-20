@@ -370,12 +370,20 @@ function heroAction(s){
     }
   }
 
+  // Spire Relic Outgoing damage hook
+  if(window.LeylineBattleHUD && typeof window.LeylineBattleHUD.modifyOutgoingDamage === 'function'){
+    dmg = window.LeylineBattleHUD.modifyOutgoingDamage(s.el, dmg, aff === 'weak');
+  }
+
   if(aff==='weak'){
     dmg=Math.round(dmg*1.5);
     resType='weak';
     log('CRITICAL RESONANCE! Exploited '+s.el.toUpperCase()+' vulnerability for '+dmg+' dmg.','w');
+    if(window.LeylineBattleHUD && window.LeylineBattleHUD.hasRelic && window.LeylineBattleHUD.hasRelic('relic_apocalypse_matrix')){
+      log('▲ [APOCALYPSE MATRIX] Critical Resonance bonus unleashed (+20% burst)!','w');
+    }
     // Relic hook: Broken Gate FLUX refund
-    if(window.LeylineBattleHUD && window.LeylineBattleHUD.activeRelics.some(r=>r.id==='relic_broken_gate')){
+    if(window.LeylineBattleHUD && window.LeylineBattleHUD.activeRelics && window.LeylineBattleHUD.activeRelics.some(r=>r.id==='relic_broken_gate')){
       const refund = Math.max(2, Math.round(s.cost * 0.15));
       H.sp = Math.min(H.maxsp, H.sp + refund);
       log('› [RELIC REFUND] Circuit resonance restores +'+refund+' FLUX.','w');
@@ -384,8 +392,18 @@ function heroAction(s){
     dmg=Math.round(dmg*0.5);
     log('Hostile armor absorbed '+s.el.toUpperCase()+' (-50% dmg). Dealt '+dmg+'.','c');
   } else if(aff==='nul'){
-    dmg=0; resType='nul';
-    log('Attack nullified by hostile barrier! Turn forfeited!','c');
+    let bleedDmg = 0;
+    if(window.LeylineBattleHUD && typeof window.LeylineBattleHUD.checkNullBleedthrough === 'function'){
+      bleedDmg = window.LeylineBattleHUD.checkNullBleedthrough(aff, Math.round(H.atk*s.pow));
+    }
+    if(bleedDmg > 0){
+      dmg = bleedDmg;
+      resType = 'normal';
+      log('▲ [ENTROPIC CROWN] Bleed-through bypasses hostile barrier! Dealt '+dmg+' penetrating dmg!','w');
+    } else {
+      dmg=0; resType='nul';
+      log('Attack nullified by hostile barrier! Turn forfeited!','c');
+    }
   } else if(aff==='drain'||aff==='rpl'){
     E.hp=Math.min(E.maxhp, E.hp+dmg);
     resType='drain';
@@ -418,6 +436,16 @@ function stepEnemy(){
   let dmg=Math.round(E.atk*1.1);
   const aff=H.aff[sk]||'normal';
   let resType='normal';
+
+  // Spire Relic incoming damage mitigation hook
+  if(window.LeylineBattleHUD && typeof window.LeylineBattleHUD.modifyIncomingDamage === 'function'){
+    const origDmg = dmg;
+    dmg = window.LeylineBattleHUD.modifyIncomingDamage(dmg);
+    if(dmg < origDmg){
+      log('▲ [SINGULARITY FIELD] Abyssal field mitigates incoming strike (-15% dmg)!','w');
+    }
+  }
+
   if(aff==='weak'){
     dmg=Math.round(dmg*1.5); resType='weak';
     log(E.name+' exploited Cairn-Frame weakness with '+sk.toUpperCase()+'! Dealt '+dmg+' dmg!','c');

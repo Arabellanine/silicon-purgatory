@@ -2,7 +2,7 @@
  * SILICON PURGATORY // LEYLINE BATTLE EVENT TELEMETRY HUD & RELIC SYNERGY MODULE
  * Module: leyline_battle_hud.js
  * Exposes window.LeylineBattleHUD
- * Integrates environmental leyline anomalies, Endless Spire elite affixes, and Tier 4 Archon relics
+ * Integrates environmental leyline anomalies, Endless Spire elite affixes, and Spire Apex Relics
  * directly into the Tactical Cycle Arena combat loop.
  */
 (function(window) {
@@ -26,6 +26,30 @@
       icon: '👁️',
       color: '#38bdf8',
       desc: 'All hostile tactical affinities revealed at combat initialization.'
+    },
+    'relic_spire_singularity': {
+      id: 'relic_spire_singularity',
+      name: 'Abyssal Singularity Core',
+      shortName: 'SINGULARITY CORE',
+      icon: '🌌',
+      color: '#a855f7',
+      desc: '+25% Void damage. -15% incoming hostile elemental strike damage.'
+    },
+    'relic_apocalypse_matrix': {
+      id: 'relic_apocalypse_matrix',
+      name: 'Apocalypse Directive Matrix',
+      shortName: 'APOCALYPSE MATRIX',
+      icon: '⚡',
+      color: '#ff0055',
+      desc: '+1 Full Tactical Cycle on initiative. +20% Critical Resonance damage.'
+    },
+    'relic_entropic_crown': {
+      id: 'relic_entropic_crown',
+      name: 'Entropic Sovereign Crown',
+      shortName: 'ENTROPIC CROWN',
+      icon: '👑',
+      color: '#ffc14d',
+      desc: 'Permanent 2x Soul Fragment harvest; 25% bleed-through damage on hostile NULL barriers.'
     }
   };
 
@@ -85,6 +109,35 @@
       } catch(e) {
         console.warn('[LeylineHUD] Failed to parse progression storage', e);
       }
+    },
+
+    hasRelic: function(id) {
+      return this.activeRelics.some(function(r) { return r.id === id; });
+    },
+
+    modifyOutgoingDamage: function(element, dmg, isWeakness) {
+      var multiplier = 1.0;
+      if (element === 'void' && this.hasRelic('relic_spire_singularity')) {
+        multiplier += 0.25;
+      }
+      if (isWeakness && this.hasRelic('relic_apocalypse_matrix')) {
+        multiplier += 0.20;
+      }
+      return Math.round(dmg * multiplier);
+    },
+
+    modifyIncomingDamage: function(dmg) {
+      if (this.hasRelic('relic_spire_singularity')) {
+        return Math.max(1, Math.round(dmg * 0.85));
+      }
+      return dmg;
+    },
+
+    checkNullBleedthrough: function(targetAffinity, baseDmg) {
+      if (targetAffinity === 'nul' && this.hasRelic('relic_entropic_crown')) {
+        return Math.max(1, Math.round(baseDmg * 0.25));
+      }
+      return 0;
     },
 
     injectStyles: function() {
@@ -156,6 +209,12 @@
           color: #f8fafc;
           animation: pulseRelic 3s infinite alternate;
         }
+        .relic-chip.apex {
+          background: linear-gradient(90deg, rgba(168, 85, 247, 0.25), rgba(255, 0, 85, 0.25));
+          border: 1px solid #a855f7;
+          color: #ffffff;
+          box-shadow: 0 0 8px rgba(168, 85, 247, 0.35);
+        }
         .elite-affix-badge {
           display: inline-flex;
           align-items: center;
@@ -212,11 +271,13 @@
       if (this.activeRelics.length > 0) {
         for (var i = 0; i < this.activeRelics.length; i++) {
           var r = this.activeRelics[i];
-          relicsHtml += '<span class="relic-chip" style="color:' + r.color + '; border-color:' + r.color + '55;" title="' + r.desc + '">' +
+          var isApex = r.id.indexOf('spire') !== -1 || r.id.indexOf('apocalypse') !== -1 || r.id.indexOf('entropic') !== -1;
+          var chipClass = 'relic-chip' + (isApex ? ' apex' : '');
+          relicsHtml += '<span class="' + chipClass + '" style="color:' + r.color + '; border-color:' + r.color + '55;" title="' + r.desc + '">' +
                         r.icon + ' ' + r.shortName + '</span>';
         }
         if (this.activeRelics.length >= 2) {
-          relicsHtml += '<span class="relic-chip synergy" title="Dual Archon Resonance Active: Negative leyline penalties suppressed.">✨ ARCHON RESONANCE</span>';
+          relicsHtml += '<span class="relic-chip synergy" title="Archon & Spire Synergy: Tactical aura reinforcement active.">✨ AURA HARMONIC</span>';
         }
       } else if (!this.activeEliteAffix) {
         relicsHtml = '<span style="font-size: 8.5px; color:#475569; letter-spacing:0.05em;">NO RELICS EQUIPPED</span>';
@@ -266,8 +327,11 @@
           logFn('☠ [WARNING: ELITE UNIT DETECTED] ' + self.activeEliteAffix.name + ': ' + self.activeEliteAffix.desc, 'w');
         }
 
-        var hasBrokenGate = self.activeRelics.some(function(r) { return r.id === 'relic_broken_gate'; });
-        var hasWatcher = self.activeRelics.some(function(r) { return r.id === 'relic_watcher_omniscience'; });
+        var hasBrokenGate = self.hasRelic('relic_broken_gate');
+        var hasWatcher = self.hasRelic('relic_watcher_omniscience');
+        var hasSingularity = self.hasRelic('relic_spire_singularity');
+        var hasApocalypse = self.hasRelic('relic_apocalypse_matrix');
+        var hasEntropic = self.hasRelic('relic_entropic_crown');
 
         if (hasBrokenGate) {
           logFn("› [RELIC MATRIX] Sigil of the Broken Gate resonates: Ambush disabled, +1 Initiative Turn.");
@@ -287,9 +351,25 @@
           }
         }
 
+        if (hasSingularity) {
+          logFn('▲ [SPIRE RELIC] Abyssal Singularity Core active: Void resonance +25%, damage reduction field active.', 'w');
+        }
+
+        if (hasApocalypse) {
+          logFn('▲ [SPIRE RELIC] Apocalypse Directive Matrix locked: +1 Full Tactical Turn awarded on initiative.', 'w');
+          if (window.icons && typeof window.renderIcons === 'function') {
+            window.icons.push('full');
+            window.renderIcons();
+          }
+        }
+
+        if (hasEntropic) {
+          logFn('▲ [SPIRE RELIC] Entropic Sovereign Crown manifested: 2x Soul harvest enabled, Barrier bleed-through active.', 'c');
+        }
+
         // Apply Spire combat mutator hooks to enemy if battle runtime exposed
-        if (window.EndlessSpire && window.EndlessSpire.isSpireFloor(floor) && window.enemy) {
-          window.EndlessSpire.applySpireCombatMutators(window.enemy, floor, seed);
+        if (window.EndlessSpire && window.EndlessSpire.isSpireFloor(floor) && window.enemyState) {
+          window.EndlessSpire.applySpireCombatMutators(window.enemyState, floor, seed);
           if (typeof window.renderEnemy === 'function') {
             window.renderEnemy();
           }
