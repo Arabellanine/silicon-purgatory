@@ -12,6 +12,7 @@
     --crimson:#ff2b4e; --crimson-dim:#7a1226;
     --gold:#ffc14d; --gold-dim:#8a6a1e;
     --cyan:#49e2ff; --cyan-dim:#135d6e;
+    --purple:#c084fc; --purple-dim:#3b185f;
     --ink:#c7d0e0; --dim:#5a6478; --dark:#05060a;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
@@ -33,6 +34,8 @@
   .btn-crimson:hover{background:var(--crimson);box-shadow:0 0 12px rgba(255,43,78,.5);}
   .btn-cyan{background:var(--cyan-dim);border-color:var(--cyan);color:#fff;}
   .btn-cyan:hover{background:var(--cyan);color:#000;box-shadow:0 0 12px rgba(73,226,255,.5);}
+  .btn-purple{background:var(--purple-dim);border-color:var(--purple);color:#fff;}
+  .btn-purple:hover{background:var(--purple);color:#000;box-shadow:0 0 12px rgba(192,132,252,.5);}
   #viewport-wrap{flex:1;position:relative;display:flex;overflow:hidden;background:#000;}
   #game-canvas{width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;display:block;}
   #radar-panel{position:absolute;top:12px;right:12px;background:rgba(12,15,23,0.92);border:1px solid var(--panel-border);padding:8px;display:flex;flex-direction:column;gap:6px;width:160px;backdrop-filter:blur(4px);z-index:5;}
@@ -75,6 +78,7 @@
       <button class="btn" id="btn-regen">⟳ REGEN</button>
       <button class="btn btn-crimson" id="btn-boss-toggle">⚡ BOSS CHAMBER</button>
       <button class="btn btn-crimson" id="btn-spire-toggle">🌀 ABYSSAL SPIRE</button>
+      <button class="btn btn-purple" id="btn-bestiary-toggle">📖 CODEX</button>
       <button class="btn" id="btn-spire-records">🏆 RECORDS</button>
       <a href="index.html" class="btn btn-crimson" style="text-decoration:none;">⚔️ ARENA</a>
     </div>
@@ -130,6 +134,7 @@
 <script src="abyss_modifiers.js"></script>
 <script src="archon.js"></script>
 <script src="endless_spire.js"></script>
+<script src="bestiary.js"></script>
 <script>
 (function(){
   'use strict';
@@ -247,6 +252,7 @@
       var baseHp = Math.round(120 * scaling.hpMultiplier);
       hostiles.push({
         type: { 
+          id: isSpire ? 'void_archon' : 'sentinel',
           name: isSpire ? ('ABYSSAL SPECTER // D+' + (currentFloor - 10)) : 'VOID STALKER', 
           col: isSpire ? '#a35aff' : '#ff2b4e', 
           col2: isSpire ? '#3d1666' : '#7a1226', 
@@ -438,91 +444,32 @@
     document.getElementById('btn-do-descend').onclick = function() {
       dialog.style.display = 'none';
       currentFloor += 1;
-      regen(currentSeed);
+      regen();
     };
   }
 
   function renderExtractionSummaryModal(floor, frags, scaling) {
-    var existing = document.getElementById('spireSummaryModal');
-    if (existing) existing.remove();
-
-    var records = (window.EndlessSpire && window.EndlessSpire.getRecords) ? window.EndlessSpire.getRecords() : {};
-    var depth = scaling ? scaling.depth : Math.max(1, floor - 10);
-    var mult = scaling ? (scaling.relicMultiplier || 1.0) : 1.0;
-
-    var overlay = document.createElement('div');
-    overlay.id = 'spireSummaryModal';
-    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(5,6,8,0.92);backdrop-filter:blur(6px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;font-family:"JetBrains Mono",monospace;';
-
-    var hasSingularity = (records.highestDepth || depth) >= 5;
-    var hasApocalypse = (records.highestDepth || depth) >= 10;
-
-    overlay.innerHTML = `
-      <div style="width:100%;max-width:540px;background:#0a0c12;border:2px solid #a855f7;box-shadow:0 0 30px rgba(168,85,247,0.3);padding:24px;color:#e2e8f0;box-sizing:border-box;">
-        <div style="font-size:10px;font-weight:800;letter-spacing:0.2em;color:#a855f7;margin-bottom:4px;">ABYSSAL EXTRACTION TELEMETRY // SECURED</div>
-        <h2 style="font-size:18px;font-weight:800;letter-spacing:0.05em;margin:0 0 16px 0;color:#fff;">EXTRACTION MISSION COMPLETE</h2>
-        
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
-          <div style="background:#111522;border:1px solid #1e293b;padding:12px;text-align:center;">
-            <div style="font-size:9px;color:#94a3b8;font-weight:700;letter-spacing:0.1em;">DEPTH EXTRACTED</div>
-            <div style="font-size:22px;font-weight:800;color:#c084fc;margin-top:4px;">DEPTH +${depth}</div>
-            <div style="font-size:9.5px;color:#64748b;margin-top:2px;">SECTOR FLOOR ${floor}</div>
-          </div>
-          <div style="background:#111522;border:1px solid #1e293b;padding:12px;text-align:center;">
-            <div style="font-size:9px;color:#94a3b8;font-weight:700;letter-spacing:0.1em;">HARVEST RECOVERY</div>
-            <div style="font-size:22px;font-weight:800;color:#38bdf8;margin-top:4px;">+${frags}</div>
-            <div style="font-size:9.5px;color:#64748b;margin-top:2px;">MULTIPLIER ${mult}x</div>
-          </div>
-        </div>
-
-        <div style="background:#111522;border:1px solid #1e293b;padding:12px;margin-bottom:16px;">
-          <div style="font-size:9.5px;font-weight:700;color:#94a3b8;letter-spacing:0.05em;margin-bottom:8px;">LIFETIME TELEMETRY HIGH-WATERMARKS</div>
-          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;">
-            <span style="color:#64748b;">RECORD DEPTH:</span>
-            <span style="color:#f59e0b;font-weight:700;">DEPTH +${records.highestDepth || depth}</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;">
-            <span style="color:#64748b;">TOTAL SUCCESSFUL EXTRACTIONS:</span>
-            <span style="color:#38bdf8;font-weight:700;">${records.totalExtractions || 1} RUNS</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:11px;">
-            <span style="color:#64748b;">TOTAL SOUL FRAGMENTS SECURED:</span>
-            <span style="color:#10b981;font-weight:700;">${records.totalFragmentsExtracted || frags} FRAGS</span>
-          </div>
-        </div>
-
-        <div style="font-size:9.5px;font-weight:700;color:#94a3b8;letter-spacing:0.05em;margin-bottom:8px;">APEX RELIC CATALYSTS STATUS</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px;">
-          <div style="background:${hasSingularity ? 'rgba(168,85,247,0.15)' : '#0f172a'};border:1px solid ${hasSingularity ? '#a855f7' : '#334155'};padding:8px;border-radius:4px;">
-            <div style="font-size:10px;font-weight:700;color:${hasSingularity ? '#c084fc' : '#64748b'};">🌌 SINGULARITY CORE</div>
-            <div style="font-size:8.5px;color:#94a3b8;">${hasSingularity ? 'UNLOCKED (Depth +5)' : 'LOCKED (Depth +5 required)'}</div>
-          </div>
-          <div style="background:${hasApocalypse ? 'rgba(255,0,85,0.15)' : '#0f172a'};border:1px solid ${hasApocalypse ? '#ff0055' : '#334155'};padding:8px;border-radius:4px;">
-            <div style="font-size:10px;font-weight:700;color:${hasApocalypse ? '#ff0055' : '#64748b'};">⚡ APOCALYPSE MATRIX</div>
-            <div style="font-size:8.5px;color:#94a3b8;">${hasApocalypse ? 'UNLOCKED (Depth +10)' : 'LOCKED (Depth +10 required)'}</div>
-          </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <button id="btnSummaryLogs" style="background:#1e1b4b;border:1px solid #a855f7;color:#c084fc;padding:10px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">📊 FLIGHT LOGS</button>
-          <button id="btnSummaryReturn" style="background:#0f172a;border:1px solid #38bdf8;color:#38bdf8;padding:10px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">⚔️ SECTOR 10 COCKPIT</button>
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(overlay);
-
-    document.getElementById('btnSummaryLogs').onclick = function() {
-      if (window.EndlessSpire && typeof window.EndlessSpire.renderRecordsModal === 'function') {
-        window.EndlessSpire.renderRecordsModal();
-      }
-    };
-
-    document.getElementById('btnSummaryReturn').onclick = function() {
-      overlay.remove();
+    var modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(5,6,10,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);font-family:JetBrains Mono,monospace;';
+    modal.innerHTML =
+      '<div style="background:#0c0f17;border:2px solid #49e2ff;padding:24px;max-width:480px;width:90%;box-shadow:0 0 35px rgba(73,226,255,0.25);color:#c7d0e0;">' +
+        '<div style="font-size:14px;font-weight:800;color:#49e2ff;margin-bottom:8px;border-bottom:1px solid #1c2438;padding-bottom:6px;">EXTRACTION COMPLETE // RETURN TO SECTOR 10</div>' +
+        '<div style="font-size:11px;line-height:1.6;margin-bottom:16px;">' +
+          'Reached Depth: <strong style="color:#ff2b4e;">DEPTH +' + scaling.depth + ' (FLOOR ' + floor + ')</strong><br/>' +
+          'Fragments Secured: <strong style="color:#ffc14d;">+' + frags + ' SOUL FRAGMENTS</strong><br/>' +
+          'Abyssal Multiplier: <strong style="color:#49e2ff;">' + scaling.relicMultiplier + 'x</strong><br/>' +
+          'Spire Status: <span style="color:#34d399;font-weight:700;">CARAVAN RETRIEVED SAFELY</span>' +
+        '</div>' +
+        '<div style="text-align:right;">' +
+          '<button id="btn-return-sector10" style="background:#135d6e;border:1px solid #49e2ff;color:#fff;font-family:inherit;font-size:10px;font-weight:700;padding:6px 14px;cursor:pointer;">ACKNOWLEDGE TELEMETRY</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(modal);
+    document.getElementById('btn-return-sector10').onclick = function() {
+      if (modal.parentNode) modal.parentNode.removeChild(modal);
       currentFloor = 10;
       isBossMode = true;
-      regen(currentSeed);
+      regen();
     };
   }
 
@@ -532,229 +479,217 @@
     var dBody = document.getElementById('d-body');
     var dActions = document.getElementById('d-actions');
 
+    var entityName = (h.type && h.type.name) ? h.type.name : 'ROGUE DAEMON';
+    var entityId = (h.type && (h.type.id || h.type.key)) ? (h.type.id || h.type.key) : entityName.toLowerCase();
+
+    // Record discovery telemetry in Bestiary Codex
+    if (window.BestiaryCodex) {
+      window.BestiaryCodex.recordEncounter(entityId, true);
+    }
+
+    dTitle.textContent = h.isArchon ? '⚠️ CRITICAL ANOMALY // ARCHON DETECTED ⚠️' : (h.isBoss ? '⚠️ BOSS THRESHOLD BREACHED ⚠️' : '! TACTICAL CONTACT !');
+    dTitle.style.color = (h.isArchon || h.isBoss) ? 'var(--crimson)' : 'var(--gold)';
+    dBody.innerHTML =
+      '<div style="font-size:11px;line-height:1.5;">' +
+      'Contact: <strong style="color:#fff;">' + entityName + '</strong><br/>' +
+      'Class: <span style="color:var(--cyan);">' + (h.type && h.type.classTitle ? h.type.classTitle : 'UNREGISTERED ENTITY') + '</span><br/>' +
+      'Combat Status: <span style="color:var(--crimson);font-weight:700;">ALERT // WEAPONS HOT</span><br/>' +
+      '<p style="color:#5a6478;font-size:9.5px;margin-top:6px;">Disengage to relocate, or engage in Tactical Cycle Press Turn arena.</p>' +
+      '</div>';
+
     dActions.innerHTML =
       '<button class="btn" id="d-flee">DISENGAGE</button>' +
-      '<button class="btn btn-crimson" id="d-battle">ENGAGE COMBAT</button>';
+      '<button class="btn btn-purple" id="d-inspect">INSPECT CODEX</button>' +
+      '<button class="btn btn-crimson" id="d-battle">ENGAGE COMBAT ⚔️</button>';
 
-    if (h.isArchon) {
-      dTitle.textContent = '⚠️ SUPREME DANGER // ARCHON COGNITION DETECTED';
-      dTitle.style.color = '#ff0055';
-      dBody.innerHTML = '<strong>' + (h.type.name || 'ABYSSAL ARCHON') + '</strong><br/>' +
-        '<span style="color:var(--gold);font-size:9.5px;">' + (h.type.title || 'ARCHON CLASS APEX DAEMON') + '</span><br/>' +
-        'HP: ' + h.type.hp + ' / ' + h.type.maxHp + ' · Actions: 3/Turn<br/>' +
-        '<em>Relic: ' + (h.type.relicDrops ? h.type.relicDrops[0].name : 'Unknown') + '</em>';
-    } else if (h.isBoss) {
-      dTitle.textContent = '⚠️ CRITICAL ALERT // APEX DAEMON DETECTED';
-      dTitle.style.color = 'var(--crimson)';
-      dBody.innerHTML = '<strong>' + (h.type.name || 'APOSTLE OF ZERO') + '</strong><br/>' +
-        (h.type.title || 'ARCH-DAEMON PRIME COGNITION') + '<br/>HP: ' + h.type.hp + ' / ' + h.type.maxHp +
-        ' · Multi-Turn Boss Encounter';
-    } else {
-      dTitle.textContent = '! ENCOUNTER !';
-      dTitle.style.color = 'var(--gold)';
-      var scalingInfo = h.type.scaling ? (' · Tier: Depth +' + h.type.scaling.depth) : '';
-      dBody.innerHTML = 'Hostile unit: <strong>' + (h.type.name || 'SANCTUM WARDEN') + '</strong>' + scalingInfo +
-        '<br/><span style="color:var(--cyan);font-size:9.5px;">HP: ' + h.type.hp + ' · Multiplier Active</span>';
-    }
     dialog.style.display = 'flex';
 
-    document.getElementById('d-flee').onclick = function(){
-      document.getElementById('dialog-overlay').style.display = 'none';
+    document.getElementById('d-flee').onclick = function() {
+      dialog.style.display = 'none';
       player.gx = Math.max(1, player.gx - 1);
-      player.gy = Math.max(1, player.gy + 1);
+      updateTelemetry();
     };
-    document.getElementById('d-battle').onclick = function(){
+
+    document.getElementById('d-inspect').onclick = function() {
+      if (window.BestiaryCodex) {
+        window.BestiaryCodex.renderBestiaryModal();
+      }
+    };
+
+    document.getElementById('d-battle').onclick = function() {
       window.location.href = 'index.html';
     };
   }
 
-  document.getElementById('btn-regen').onclick = function(){
+  function updateTelemetry() {
+    document.getElementById('t-pos').textContent = player.gx + ',' + player.gy;
+    var discCount = rooms.filter(function(r){ return r.discovered; }).length;
+    document.getElementById('t-rooms').textContent = discCount + ' / ' + rooms.length;
+    document.getElementById('t-hostiles').textContent = hostiles.length;
+    var pct = Math.round((discCount / rooms.length) * 100);
+    document.getElementById('t-cleared').textContent = pct + '%';
+  }
+
+  // Keyboard navigation
+  window.addEventListener('keydown', function(e) {
+    if (document.getElementById('dialog-overlay').style.display === 'flex') return;
+    if (document.getElementById('spire-records-modal')) return;
+    if (document.getElementById('bestiary-codex-modal')) return;
+    if (e.key === 'ArrowUp' || e.key === 'w') movePlayer(0, -1);
+    else if (e.key === 'ArrowDown' || e.key === 's') movePlayer(0, 1);
+    else if (e.key === 'ArrowLeft' || e.key === 'a') movePlayer(-1, 0);
+    else if (e.key === 'ArrowRight' || e.key === 'd') movePlayer(1, 0);
+  });
+
+  // D-Pad touch/mouse controls
+  document.getElementById('d-up').onclick = function() { movePlayer(0, -1); };
+  document.getElementById('d-down').onclick = function() { movePlayer(0, 1); };
+  document.getElementById('d-left').onclick = function() { movePlayer(-1, 0); };
+  document.getElementById('d-right').onclick = function() { movePlayer(1, 0); };
+
+  // Button actions
+  document.getElementById('btn-regen').onclick = function() { regen(); };
+  document.getElementById('btn-next-floor').onclick = function() {
+    currentFloor += 1;
+    if (currentFloor === 10) isBossMode = true;
     regen();
   };
-  document.getElementById('btn-next-floor').onclick = function(){
-    currentFloor = (currentFloor >= 20) ? 1 : currentFloor + 1;
-    regen(currentSeed);
-  };
-  document.getElementById('btn-boss-toggle').onclick = function(){
+  document.getElementById('btn-boss-toggle').onclick = function() {
     isBossMode = !isBossMode;
-    this.textContent = isBossMode ? '⚡ STANDARD FLOOR' : '⚡ BOSS CHAMBER';
-    regen(currentSeed);
+    currentFloor = isBossMode ? 10 : 5;
+    regen();
   };
-  document.getElementById('btn-spire-toggle').onclick = function(){
-    currentFloor = 11;
+  document.getElementById('btn-spire-toggle').onclick = function() {
     isBossMode = false;
-    regen(currentSeed);
+    currentFloor = (currentFloor < 11) ? 11 : 5;
+    regen();
   };
-  document.getElementById('btn-spire-records').onclick = function(){
+  document.getElementById('btn-spire-records').onclick = function() {
     if (window.EndlessSpire) {
       window.EndlessSpire.renderRecordsModal();
     }
   };
-
-  window.addEventListener('keydown', function(e){
-    if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') movePlayer(0, -1);
-    if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') movePlayer(0, 1);
-    if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') movePlayer(-1, 0);
-    if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') movePlayer(1, 0);
-  });
-
-  document.getElementById('d-up').onclick = function(){ movePlayer(0, -1); };
-  document.getElementById('d-down').onclick = function(){ movePlayer(0, 1); };
-  document.getElementById('d-left').onclick = function(){ movePlayer(-1, 0); };
-  document.getElementById('d-right').onclick = function(){ movePlayer(1, 0); };
-
-  function updateTelemetry() {
-    document.getElementById('t-pos').textContent = player.gx + ',' + player.gy;
-    var disc = rooms.filter(function(r){ return r.discovered; }).length;
-    document.getElementById('t-rooms').textContent = disc + ' / ' + rooms.length;
-    document.getElementById('t-hostiles').textContent = hostiles.length;
-    var clearedPct = Math.round((disc / Math.max(1, rooms.length)) * 100);
-    document.getElementById('t-cleared').textContent = clearedPct + '%';
-  }
-
-  var lastT = performance.now();
-  var frames = 0;
-  var fps = 60;
-
-  function render() {
-    var now = performance.now();
-    frames++;
-    if (now - lastT >= 1000) {
-      fps = Math.round((frames * 1000) / (now - lastT));
-      fpsDisp.textContent = fps + ' FPS';
-      frames = 0;
-      lastT = now;
+  document.getElementById('btn-bestiary-toggle').onclick = function() {
+    if (window.BestiaryCodex) {
+      window.BestiaryCodex.renderBestiaryModal();
     }
+  };
 
-    player.rx += (player.gx * TILE * SCALE - player.rx) * 0.2;
-    player.ry += (player.gy * TILE * SCALE - player.ry) * 0.2;
+  // Rendering Loop
+  var lastTime = performance.now();
+  var frames = 0;
+  var fpsTimer = 0;
+
+  function render(now) {
+    var dt = (now - lastTime) / 1000;
+    lastTime = now;
+    frames++;
+    fpsTimer += dt;
+    if (fpsTimer >= 1.0) {
+      fpsDisp.textContent = frames + ' FPS';
+      frames = 0;
+      fpsTimer = 0;
+    }
 
     ctx.fillStyle = '#05060a';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    var camX = Math.round(canvas.width / 2 - player.rx);
-    var camY = Math.round(canvas.height / 2 - player.ry);
+    var camX = canvas.width / 2 - (player.gx * TILE * SCALE);
+    var camY = canvas.height / 2 - (player.gy * TILE * SCALE);
 
-    var ts = TILE * SCALE;
+    // Draw Floor Grid
     for (var y = 0; y < MAP_H; y++) {
       for (var x = 0; x < MAP_W; x++) {
-        var screenX = camX + x * ts;
-        var screenY = camY + y * ts;
-        if (screenX + ts < 0 || screenX > canvas.width || screenY + ts < 0 || screenY > canvas.height) continue;
-
         var tile = floorGrid[y][x];
+        var sx = Math.floor(camX + x * TILE * SCALE);
+        var sy = Math.floor(camY + y * TILE * SCALE);
+        var sz = TILE * SCALE;
+        if (sx + sz < 0 || sx > canvas.width || sy + sz < 0 || sy > canvas.height) continue;
+
         if (tile === WALL) {
-          ctx.fillStyle = '#101524';
-          ctx.fillRect(screenX, screenY, ts, ts);
-          ctx.strokeStyle = '#182038';
-          ctx.strokeRect(screenX, screenY, ts, ts);
+          ctx.fillStyle = '#080b12';
+          ctx.fillRect(sx, sy, sz, sz);
+          ctx.strokeStyle = '#0f1422';
+          ctx.strokeRect(sx, sy, sz, sz);
         } else if (tile === FLOOR) {
-          ctx.fillStyle = (activeModifier && activeModifier.bg) ? activeModifier.bg : '#080c16';
-          ctx.fillRect(screenX, screenY, ts, ts);
-          ctx.fillStyle = (activeModifier && activeModifier.color) ? activeModifier.color : '#0d1322';
-          ctx.globalAlpha = activeModifier ? 0.08 : 1.0;
-          ctx.fillRect(screenX + 2, screenY + 2, ts - 4, ts - 4);
-          ctx.globalAlpha = 1.0;
-        } else if (tile === DOOR) {
-          ctx.fillStyle = '#ffc14d';
-          ctx.fillRect(screenX, screenY, ts, ts);
+          var isCurrentRoom = false;
+          rooms.forEach(function(rm){
+            if (rm.discovered && x >= rm.x && x < rm.x + rm.w && y >= rm.y && y < rm.y + rm.h) {
+              isCurrentRoom = true;
+            }
+          });
+          ctx.fillStyle = isCurrentRoom ? '#0f1726' : '#0a0e17';
+          ctx.fillRect(sx, sy, sz, sz);
+          ctx.strokeStyle = '#141e30';
+          ctx.strokeRect(sx, sy, sz, sz);
         }
       }
     }
 
-    // Draw Extraction Beacon if active in Spire mode
+    // Draw Extraction Beacon (Spire only)
     if (spireBeacon) {
-      var bx = camX + spireBeacon.gx * ts;
-      var by = camY + spireBeacon.gy * ts;
-      var pulse = (Math.sin(now * 0.005) + 1) * 0.5;
-      ctx.strokeStyle = '#49e2ff';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(bx + ts/2, by + ts/2, ts * 0.6 + pulse * 6, 0, Math.PI * 2);
-      ctx.stroke();
-
-      ctx.fillStyle = 'rgba(73, 226, 255, 0.25)';
-      ctx.beginPath();
-      ctx.arc(bx + ts/2, by + ts/2, ts * 0.4 + pulse * 4, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#ffc14d';
-      ctx.fillRect(bx + ts/2 - 4, by + ts/2 - 4, 8, 8);
+      var bx = Math.floor(camX + spireBeacon.gx * TILE * SCALE + (TILE * SCALE)/4);
+      var by = Math.floor(camY + spireBeacon.gy * TILE * SCALE + (TILE * SCALE)/4);
+      var bsz = (TILE * SCALE) / 2;
+      ctx.fillStyle = '#49e2ff';
+      ctx.shadowColor = '#49e2ff';
+      ctx.shadowBlur = 12;
+      ctx.fillRect(bx, by, bsz, bsz);
+      ctx.shadowBlur = 0;
     }
 
-    hostiles.forEach(function(h){
-      var hx = camX + h.gx * ts;
-      var hy = camY + h.gy * ts;
-      if (h.isArchon) {
-        ctx.fillStyle = 'rgba(255, 0, 85, 0.3)';
-        ctx.beginPath();
-        ctx.arc(hx + ts/2, hy + ts/2, ts * 1.2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = h.type.col || '#ff0055';
-        ctx.fillRect(hx + 2, hy + 2, ts - 4, ts - 4);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(hx + 10, hy + 10, 8, 8);
-        ctx.fillRect(hx + ts - 18, hy + 10, 8, 8);
-      } else if (h.isBoss) {
-        ctx.fillStyle = 'rgba(255,0,51,0.25)';
-        ctx.beginPath();
-        ctx.arc(hx + ts/2, hy + ts/2, ts, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#ff0033';
-        ctx.fillRect(hx + 4, hy + 4, ts - 8, ts - 8);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(hx + 12, hy + 12, 6, 6);
-        ctx.fillRect(hx + ts - 18, hy + 12, 6, 6);
-      } else {
-        ctx.fillStyle = h.type.col || '#ff2b4e';
-        ctx.fillRect(hx + 8, hy + 8, ts - 16, ts - 16);
-      }
+    // Draw Hostiles
+    hostiles.forEach(function(h) {
+      var hx = Math.floor(camX + h.gx * TILE * SCALE + 6);
+      var hy = Math.floor(camY + h.gy * TILE * SCALE + 6);
+      var hsz = (TILE * SCALE) - 12;
+      ctx.fillStyle = (h.type && h.type.col) ? h.type.col : '#ff2b4e';
+      ctx.shadowColor = (h.type && h.type.glow) ? h.type.glow : '#ff2b4e';
+      ctx.shadowBlur = h.isArchon ? 18 : 8;
+      ctx.fillRect(hx, hy, hsz, hsz);
+      ctx.shadowBlur = 0;
     });
 
-    var px = camX + player.rx;
-    var py = camY + player.ry;
+    // Draw Player
+    var px = Math.floor(camX + player.gx * TILE * SCALE + 4);
+    var py = Math.floor(camY + player.gy * TILE * SCALE + 4);
+    var psz = (TILE * SCALE) - 8;
     ctx.fillStyle = '#49e2ff';
-    ctx.fillRect(px + 8, py + 8, ts - 16, ts - 16);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(px + 14, py + 14, 4, 4);
-    ctx.fillRect(px + ts - 18, py + 14, 4, 4);
+    ctx.shadowColor = '#49e2ff';
+    ctx.shadowBlur = 10;
+    ctx.fillRect(px, py, psz, psz);
+    ctx.shadowBlur = 0;
 
-    drawRadar();
+    // Draw Floor Radar
+    radarCtx.fillStyle = '#05060a';
+    radarCtx.fillRect(0, 0, radarC.width, radarC.height);
+    var rwRatio = radarC.width / MAP_W;
+    var rhRatio = radarC.height / MAP_H;
+
+    for (var ry1 = 0; ry1 < MAP_H; ry1++) {
+      for (var rx1 = 0; rx1 < MAP_W; rx1++) {
+        if (floorGrid[ry1][rx1] === FLOOR) {
+          radarCtx.fillStyle = '#141e30';
+          radarCtx.fillRect(rx1 * rwRatio, ry1 * rhRatio, rwRatio, rhRatio);
+        }
+      }
+    }
+    // Radar Hostiles
+    hostiles.forEach(function(h) {
+      radarCtx.fillStyle = h.isArchon ? '#ff0055' : '#ff2b4e';
+      radarCtx.fillRect(h.gx * rwRatio - 1, h.gy * rhRatio - 1, 3, 3);
+    });
+    // Radar Player
+    radarCtx.fillStyle = '#49e2ff';
+    radarCtx.fillRect(player.gx * rwRatio - 1, player.gy * rhRatio - 1, 3, 3);
+
     requestAnimationFrame(render);
   }
 
-  function drawRadar() {
-    radarCtx.fillStyle = '#05060a';
-    radarCtx.fillRect(0, 0, 144, 108);
-    var rw = 144 / MAP_W;
-    var rh = 108 / MAP_H;
-
-    for (var y = 0; y < MAP_H; y++) {
-      for (var x = 0; x < MAP_W; x++) {
-        if (floorGrid[y][x] === FLOOR) {
-          radarCtx.fillStyle = '#162238';
-          radarCtx.fillRect(x * rw, y * rh, rw, rh);
-        }
-      }
-    }
-
-    if (spireBeacon) {
-      radarCtx.fillStyle = '#49e2ff';
-      radarCtx.fillRect(spireBeacon.gx * rw - 1, spireBeacon.gy * rh - 1, 4, 4);
-    }
-
-    hostiles.forEach(function(h){
-      radarCtx.fillStyle = h.isArchon ? '#ff0055' : (h.isBoss ? '#ff0033' : '#ff4d6d');
-      radarCtx.fillRect(h.gx * rw - 1, h.gy * rh - 1, h.isArchon ? 5 : (h.isBoss ? 4 : 2), h.isArchon ? 5 : (h.isBoss ? 4 : 2));
-    });
-
-    radarCtx.fillStyle = '#49e2ff';
-    radarCtx.fillRect(player.gx * rw - 1, player.gy * rh - 1, 3, 3);
-  }
-
-  isBossMode = true;
-  regen('ABYSS-RUN-01');
+  // Initial startup
+  regen();
   requestAnimationFrame(render);
+
 })();
 </script>
 </body>
