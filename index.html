@@ -7,522 +7,1004 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet" />
 <style>
-  :root{--bg-void:#050608;--crimson:#ff2b44;--amber:#f59e0b;--ice-cyan:#38bdf8;--line:#13202b;--panel:#0b0f16;--dim:#5b6b78;--ok:#4ade80;--purple:#a855f7;}
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{min-height:100vh;background:radial-gradient(1200px 600px at 50% -10%,#0b1118 0%,var(--bg-void) 60%),var(--bg-void);
-    color:#cdd6df;font-family:'JetBrains Mono',ui-monospace,monospace;-webkit-font-smoothing:none;}
-  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;
-    background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,0,0,.28) 3px,rgba(0,0,0,0) 4px);mix-blend-mode:multiply;opacity:.5;}
-  body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:51;background:radial-gradient(130% 130% at 50% 50%,transparent 55%,rgba(0,0,0,.6) 100%);}
-  .wrap{max-width:1000px;margin:0 auto;padding:14px;display:flex;flex-direction:column;gap:12px}
-  header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:1px solid var(--line);
-    background:linear-gradient(180deg,#0a0e14,#070a0f);padding:10px 14px;border-radius:8px;}
-  .title{font-weight:800;letter-spacing:2px;font-size:15px}.title b{color:var(--crimson);text-shadow:0 0 10px rgba(255,43,68,.5)}
-  .tag{font-size:10px;color:var(--dim);letter-spacing:1px}.spacer{flex:1}
-  .btn{font-family:inherit;cursor:pointer;color:#dbe4ec;background:#0c1017;border:1px solid var(--line);
-    padding:9px 14px;border-radius:6px;font-size:12px;letter-spacing:1px;transition:.12s;text-decoration:none;display:inline-flex;gap:6px;align-items:center;}
-  .btn:hover{border-color:var(--ice-cyan);color:#fff;box-shadow:0 0 14px rgba(56,189,248,.25)}
-  .btn.big{font-size:13px;font-weight:700;border-color:var(--amber);color:#ffe4b5}
-  .btn.big:hover{box-shadow:0 0 18px rgba(245,158,11,.35)}
-  .btn.purple{border-color:var(--purple);color:#f3e8ff;}
-  .btn.purple:hover{border-color:#c084fc;box-shadow:0 0 16px rgba(168,85,247,.45)}
-  .arena{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  @media(max-width:720px){.arena{grid-template-columns:1fr}}
-  .card{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:14px}
-  .combatant{text-align:center}
-  .sprite{width:96px;height:96px;margin:0 auto 8px;image-rendering:pixelated;display:block;filter:drop-shadow(0 0 14px var(--glow,#000))}
-  .cname{font-weight:800;letter-spacing:2px;font-size:14px}
-  .cname.enemy{color:var(--crimson)}.cname.hero{color:var(--ice-cyan)}
-  .bar{height:12px;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#05080c;margin:6px 0}
-  .bar>i{display:block;height:100%;transition:width .35s}
-  .hp>i{background:linear-gradient(90deg,#16a34a,#4ade80)}.sp>i{background:linear-gradient(90deg,#0369a1,#38bdf8)}
-  .barrow{display:flex;justify-content:space-between;font-size:10px;color:var(--dim)}
-  .aff{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:8px;font-size:9px}
-  .aff span{border:1px solid var(--line);padding:2px 5px;border-radius:4px;letter-spacing:1px}
-  .aff .weak{color:var(--amber);border-color:var(--amber)}.aff .res{color:var(--ice-cyan);border-color:#1e4a5e}
-  .aff .nul{color:var(--dim)}.aff .rpl{color:var(--crimson);border-color:var(--crimson)}
-  .turns{display:flex;align-items:center;gap:8px;justify-content:center;border:1px solid var(--line);
-    background:#070a0f;border-radius:8px;padding:8px;flex-wrap:wrap}
-  .turns .lbl{font-size:10px;color:var(--dim);letter-spacing:2px}
-  .icon{width:16px;height:16px;border-radius:50%;background:#1b2530;box-shadow:0 0 0 1px #000 inset}
-  .icon.full{background:radial-gradient(circle at 35% 35%,#bae6fd,#38bdf8);box-shadow:0 0 8px rgba(56,189,248,.7)}
-  .icon.half{background:radial-gradient(circle at 35% 35%,#fff7c2,#f59e0b);box-shadow:0 0 8px rgba(245,158,11,.7);animation:blink .8s infinite}
-  .icon.enemy.full{background:radial-gradient(circle at 35% 35%,#ff9aa8,#ff2b44);box-shadow:0 0 8px rgba(255,43,68,.7)}
-  @keyframes blink{50%{opacity:.4}}
-  .skills{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}
-  .skill{font-family:inherit;cursor:pointer;border:1px solid var(--line);background:#0c1017;color:#dbe4ec;
-    border-radius:8px;padding:10px 6px;font-size:11px;letter-spacing:1px;transition:.12s;text-align:center}
-  .skill:hover:not(:disabled){border-color:var(--amber);color:#fff;box-shadow:0 0 12px rgba(245,158,11,.25)}
-  .skill.talk-btn{border-color:#38bdf8;background:#0d1c2d;color:#d7f7ff}
-  .skill.talk-btn:hover:not(:disabled){border-color:#7dd3fc;box-shadow:0 0 12px rgba(56,189,248,.35)}
-  .skill.fuse-btn{border-color:#a855f7;background:#180b26;color:#f3e8ff}
-  .skill.fuse-btn:hover:not(:disabled){border-color:#c084fc;box-shadow:0 0 14px rgba(168,85,247,.4)}
-  .skill:disabled{opacity:.35;cursor:not-allowed}
-  .skill small{display:block;color:var(--dim);font-size:9px;margin-top:3px}
-  .log{height:150px;overflow:auto;border:1px solid var(--line);background:#05080c;border-radius:8px;padding:8px;font-size:11px;line-height:1.7}
-  .log .w{color:var(--amber)}.log .c{color:var(--crimson)}.log .g{color:var(--ok)}.log .i{color:var(--ice-cyan)}.log .p{color:var(--purple)}
-  .result{position:fixed;inset:0;z-index:60;background:rgba(2,4,8,.9);display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px}
-  .result.show{display:flex}.result h2{font-size:34px;letter-spacing:6px}
-  .result.win h2{color:var(--ok);text-shadow:0 0 20px rgba(74,222,128,.5)}
-  .result.lose h2{color:var(--crimson);text-shadow:0 0 20px rgba(255,43,68,.5)}
-  
-  /* Roster & Fusion Modal */
-  .roster-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px;border:1px solid var(--line);background:#070a0f;padding:8px 12px;border-radius:8px;}
-  .roster-chip{display:inline-flex;align-items:center;gap:6px;background:#0f1722;border:1px solid #1e2d3d;padding:4px 8px;border-radius:4px;font-size:10px;color:#cbd5e1}
-  .roster-chip b{color:#38bdf8}
-  .souls-hud{display:inline-flex;align-items:center;gap:6px;background:#0d1824;border:1px solid #0284c7;padding:3px 8px;border-radius:4px;font-size:10px;color:#38bdf8;font-weight:700;letter-spacing:1px}
-  .souls-hud b{color:#bae6fd}
-  .fusion-modal{position:fixed;inset:0;z-index:70;background:rgba(4,6,10,.92);display:none;align-items:center;justify-content:center;padding:16px;}
-  .fusion-modal.open{display:flex}
-  .fusion-panel{background:#090d14;border:2px solid var(--purple);border-radius:12px;padding:18px;max-width:560px;width:100%;box-shadow:0 0 30px rgba(168,85,247,.3);display:flex;flex-direction:column;gap:12px;}
-  .f-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #231938;padding-bottom:8px}
-  .f-header h3{color:var(--purple);font-size:14px;letter-spacing:2px}
-  .f-selectors{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-  .f-selectors select{background:#0d121c;border:1px solid var(--line);color:#e2e8f0;font-family:inherit;padding:8px;border-radius:6px;font-size:11px;}
-  .f-preview{background:#05070c;border:1px dashed #3a225c;border-radius:8px;padding:12px;text-align:center;}
-  .f-preview h4{color:#f3e8ff;font-size:13px;letter-spacing:1px;margin-bottom:4px;}
-  .f-preview p{font-size:10px;color:var(--dim);line-height:1.5;}
-  .f-actions{display:flex;gap:8px;justify-content:flex-end;}
-  .badge-locked{display:inline-block;background:#3b0764;border:1px solid #a855f7;color:#f3e8ff;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:800;letter-spacing:1px;margin-bottom:6px}
-  .badge-unlocked{display:inline-block;background:#064e3b;border:1px solid #10b981;color:#a7f3d0;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:800;letter-spacing:1px;margin-bottom:6px}
+  :root {
+    --bg: #090a0f;
+    --panel: #11141c;
+    --panel-border: #1f2533;
+    --text: #d8dee9;
+    --dim: #606b82;
+    --amber: #ffaa33;
+    --crimson: #ff3355;
+    --cyan: #33ccff;
+    --green: #33ff99;
+    --volt: #ffc14d;
+    --cryo: #49e2ff;
+    --overheat: #ff2b4e;
+    --corrosion: #a35aff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    overflow-x: hidden;
+  }
+  .crt::after {
+    content: " ";
+    display: block;
+    position: fixed;
+    top: 0; left: 0; bottom: 0; right: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+    z-index: 99;
+    background-size: 100% 2px, 3px 100%;
+    pointer-events: none;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--panel-border);
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .title-group h1 {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--amber);
+    letter-spacing: 1px;
+  }
+  .title-group .sub {
+    font-size: 10px;
+    color: var(--dim);
+  }
+  .top-telemetry {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    font-size: 11px;
+    flex-wrap: wrap;
+  }
+  .pill {
+    padding: 2px 8px;
+    border: 1px solid var(--panel-border);
+    background: var(--panel);
+    border-radius: 2px;
+  }
+  .pill.amber { border-color: var(--amber); color: var(--amber); }
+  .pill.green { border-color: var(--green); color: var(--green); }
+  .btn-audio {
+    cursor: pointer;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    color: var(--text);
+    padding: 3px 8px;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    transition: all 0.15s ease;
+  }
+  .btn-audio:hover { border-color: var(--cyan); color: var(--cyan); }
+  .btn-audio.active { border-color: var(--green); color: var(--green); }
+
+  .nav-strip {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .nav-btn {
+    text-decoration: none;
+    color: var(--text);
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+  }
+  .nav-btn:hover { border-color: var(--amber); color: var(--amber); }
+
+  /* ARENA CONTAINER */
+  .arena-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+    flex: 1;
+  }
+
+  .combat-card {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    padding: 12px;
+    position: relative;
+    border-radius: 2px;
+  }
+  .combat-card.hostile { border-color: rgba(255, 51, 85, 0.4); }
+  .combat-card.hero { border-color: rgba(51, 204, 255, 0.4); }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .entity-name {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+  }
+  .hostile .entity-name { color: var(--crimson); }
+  .hero .entity-name { color: var(--cyan); }
+
+  .stat-row {
+    margin-bottom: 6px;
+  }
+  .stat-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--dim);
+    margin-bottom: 2px;
+  }
+  .meter-bar {
+    width: 100%;
+    height: 6px;
+    background: #0d0f14;
+    border: 1px solid var(--panel-border);
+    border-radius: 1px;
+    overflow: hidden;
+    position: relative;
+  }
+  .meter-fill {
+    height: 100%;
+    transition: width 0.25s ease;
+  }
+  .meter-fill.hp { background: var(--green); }
+  .meter-fill.hp-hostile { background: var(--crimson); }
+  .meter-fill.sp { background: var(--cyan); }
+
+  .affinities {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    font-size: 9.5px;
+    margin-top: 6px;
+    color: var(--dim);
+  }
+  .affinity-tag {
+    padding: 1px 4px;
+    background: #0d0f14;
+    border: 1px solid #1a202c;
+  }
+  .affinity-tag span { font-weight: 700; }
+  .aff-weak { color: var(--amber); border-color: rgba(255, 170, 51, 0.4); }
+  .aff-resist { color: #8899aa; }
+  .aff-null { color: #556677; text-decoration: line-through; }
+
+  .status-badges {
+    display: flex;
+    gap: 4px;
+    margin-top: 6px;
+    min-height: 16px;
+    flex-wrap: wrap;
+  }
+
+  /* PRESS TURN CYCLE HUD */
+  .turn-hud {
+    background: #0d0f14;
+    border: 1px solid var(--panel-border);
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .turn-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--amber);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .press-icons {
+    display: flex;
+    gap: 8px;
+  }
+  .press-icon {
+    width: 16px;
+    height: 16px;
+    background: #1b202c;
+    border: 1px solid #2b3345;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    transition: all 0.2s ease;
+  }
+  .press-icon.full {
+    background: var(--amber);
+    box-shadow: 0 0 8px rgba(255, 170, 51, 0.6);
+    border-color: #ffd280;
+  }
+  .press-icon.half {
+    background: #33ccff;
+    box-shadow: 0 0 8px rgba(51, 204, 255, 0.6);
+    border-color: #8ce4ff;
+    animation: blink-half 0.8s infinite alternate;
+  }
+  @keyframes blink-half {
+    from { opacity: 0.6; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1.1); }
+  }
+
+  /* LOG TERMINAL */
+  .log-terminal {
+    background: #06070a;
+    border: 1px solid var(--panel-border);
+    height: 120px;
+    overflow-y: auto;
+    padding: 8px 10px;
+    font-size: 10.5px;
+    display: flex;
+    flex-direction: column-reverse;
+  }
+  .log-line {
+    margin-bottom: 3px;
+    word-break: break-word;
+  }
+  .log-line.hero { color: var(--cyan); }
+  .log-line.hostile { color: var(--crimson); }
+  .log-line.weak { color: var(--amber); font-weight: 700; }
+  .log-line.crit { color: #ffff33; font-weight: 800; }
+  .log-line.status { color: var(--volt); }
+  .log-line.system { color: var(--dim); }
+
+  /* ACTION DECK */
+  .action-deck {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    padding: 10px;
+  }
+  .action-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--dim);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .action-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 8px;
+  }
+  .skill-btn {
+    background: #0d0f14;
+    border: 1px solid var(--panel-border);
+    color: var(--text);
+    padding: 8px;
+    font-family: inherit;
+    font-size: 11px;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 52px;
+  }
+  .skill-btn:hover:not(:disabled) {
+    border-color: var(--amber);
+    background: #141822;
+  }
+  .skill-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .skill-top {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .skill-sub {
+    font-size: 9px;
+    color: var(--dim);
+  }
+
+  /* MODAL OVERLAY */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .modal-box {
+    background: var(--panel);
+    border: 1px solid var(--amber);
+    padding: 20px;
+    max-width: 440px;
+    width: 100%;
+    text-align: center;
+  }
+  .modal-box h2 {
+    font-size: 16px;
+    margin-bottom: 8px;
+    color: var(--amber);
+  }
+  .modal-box p {
+    color: var(--dim);
+    margin-bottom: 16px;
+    font-size: 11px;
+  }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
 </style>
-<script src="rewards.js"></script>
+<script src="tactical_audio_status.js"></script>
+<script src="bestiary.js"></script>
 <script src="negotiate.js"></script>
 <script src="fusion.js"></script>
-<script src="abyss_modifiers.js"></script>
-<script src="progression.js"></script>
-<script src="leyline_battle_hud.js"></script>
 </head>
-<body>
-<div class="wrap">
+<body class="crt">
+
   <header>
-    <div>
-      <div class="title"><b>SILICON</b> PURGATORY <span class="tag">// TACTICAL CYCLE ARENA</span></div>
-      <div class="tag" id="encTag">ENCOUNTER · SEED —</div>
+    <div class="title-group">
+      <h1>SILICON PURGATORY // TACTICAL CYCLE ARENA</h1>
+      <div class="sub">PRESS TURN BATTLE MATRIX · PROCEDURAL WEB AUDIO SFX & TACTICAL STATUS ENGINE</div>
     </div>
-    <div class="spacer"></div>
-    <button class="btn purple" id="openFusionBtn" onclick="openFusionModal()">⚡ FUSION CHAMBER</button>
-    <a class="btn big" href="dungeon.html" id="dungeonLink">🏰 ENTER DUNGEON FLOOR</a>
+    <div class="top-telemetry">
+      <div class="pill green" id="fpsCounter">FPS: 60</div>
+      <div class="pill amber" id="seedDisplay">SEED: ARABELLA-01</div>
+      <div class="pill" id="soulCounter">SOULS: 128</div>
+      <button class="btn-audio active" id="btnAudioToggle" onclick="toggleAudio()">🔊 AUDIO: ACTIVE</button>
+    </div>
   </header>
 
-  <div class="roster-bar" id="rosterBar">
-    <span class="tag" style="color:var(--purple)">PACT ROSTER [2/8]:</span>
-    <div id="rosterChips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-    <div class="souls-hud" id="soulsHud" title="Soul fragments recovered from Sector Bosses">SOULS: <b id="soulCount">0</b></div>
-    <span class="tag" style="margin-left:auto" id="fpsCounter">FPS: 60</span>
+  <div class="nav-strip">
+    <a href="dungeon.html" class="nav-btn">🏰 ENTER DUNGEON FLOOR</a>
+    <button class="nav-btn" onclick="openFusionModal()">⚡ DEMON FUSION CHAMBER</button>
+    <button class="nav-btn" onclick="resetEncounter()">↻ RESTART ENCOUNTER</button>
   </div>
 
-  <div class="turns">
-    <span class="lbl">TACTICAL CYCLES</span>
-    <div id="heroIcons" style="display:flex;gap:6px"></div>
-    <span class="lbl" style="margin-left:auto;color:var(--crimson)">HOSTILE</span>
-    <div id="enemyIcons" style="display:flex;gap:6px"></div>
-  </div>
+  <div class="arena-grid">
 
-  <div class="arena">
-    <div class="card combatant">
-      <canvas class="sprite" id="heroSprite" width="16" height="16" style="--glow:#38bdf8"></canvas>
-      <div class="cname hero" id="heroName">CAIRN-FRAME</div>
-      <div class="barrow"><span>INTEGRITY</span><span id="heroHpTxt">0/0</span></div>
-      <div class="bar hp"><i id="heroHp" style="width:100%"></i></div>
-      <div class="barrow"><span>FLUX</span><span id="heroSpTxt">0/0</span></div>
-      <div class="bar sp"><i id="heroSp" style="width:100%"></i></div>
-    </div>
-    <div class="card combatant">
-      <canvas class="sprite" id="enemySprite" width="16" height="16"></canvas>
-      <div class="cname enemy" id="enemyName">DAEMON SENTINEL</div>
-      <div class="barrow"><span>INTEGRITY</span><span id="enemyHpTxt">0/0</span></div>
-      <div class="bar hp"><i id="enemyHp" style="width:100%"></i></div>
-      <div class="aff" id="enemyAff"></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="tag" style="margin-bottom:8px">ACTIONS — exploit resistance vulnerabilities to gain extra cycles, negotiate, or fuse demons</div>
-    <div class="skills" id="skills"></div>
-  </div>
-
-  <div class="card"><div class="log" id="log"></div></div>
-</div>
-
-<div class="result" id="result"><h2 id="resultTxt">VICTORY</h2>
-  <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
-    <a class="btn big" href="dungeon.html" id="victoryDungeonBtn">🏰 RETURN TO DUNGEON</a>
-    <button class="btn" onclick="location.reload()">↻ REMATCH</button>
-  </div>
-</div>
-
-<!-- FUSION CHAMBER MODAL -->
-<div class="fusion-modal" id="fusionModal">
-  <div class="fusion-panel">
-    <div class="f-header">
-      <h3>⚡ DEMON FUSION CHAMBER</h3>
-      <button class="btn" style="padding:4px 8px;font-size:10px" onclick="closeFusionModal()">✕ ESC</button>
-    </div>
-    <div class="tag">SYNTHESIZE TWO COMPLIANT DEMON PROCESSES INTO A SUPERIOR TACTICAL FRAME</div>
-    <div class="f-selectors">
-      <div>
-        <div class="tag" style="margin-bottom:4px">PRIME VESSEL (A)</div>
-        <select id="fuseSelectA" onchange="updateFusionPreview()"></select>
+    <!-- HOSTILE ENTITY -->
+    <div class="combat-card hostile">
+      <div class="card-header">
+        <span class="entity-name" id="enemyName">DAEMON SENTINEL [MK-IV]</span>
+        <span class="pill" style="border-color:var(--crimson);color:var(--crimson);">HOSTILE // LVL 12</span>
       </div>
-      <div>
-        <div class="tag" style="margin-bottom:4px">CATALYST VESSEL (B)</div>
-        <select id="fuseSelectB" onchange="updateFusionPreview()"></select>
+      <div class="stat-row">
+        <div class="stat-label">
+          <span>INTEGRITY</span>
+          <span id="enemyHpText">95 / 95</span>
+        </div>
+        <div class="meter-bar">
+          <div class="meter-fill hp-hostile" id="enemyHpBar" style="width: 100%;"></div>
+        </div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-label">
+          <span>FLUX</span>
+          <span id="enemyFluxText">45 / 45</span>
+        </div>
+        <div class="meter-bar">
+          <div class="meter-fill sp" id="enemyFluxBar" style="width: 100%;"></div>
+        </div>
+      </div>
+      <div class="affinities" id="enemyAffinities">
+        <div class="affinity-tag">PHYS: <span>NORM</span></div>
+        <div class="affinity-tag aff-weak">FIRE: <span>WEAK</span></div>
+        <div class="affinity-tag aff-resist">ICE: <span>RESIST</span></div>
+        <div class="affinity-tag">VOLT: <span>NORM</span></div>
+        <div class="affinity-tag aff-null">VOID: <span>NULL</span></div>
+      </div>
+      <div class="status-badges" id="enemyStatusBadges"></div>
+    </div>
+
+    <!-- PRESS TURN HUD -->
+    <div class="turn-hud">
+      <div class="turn-label" id="turnPhaseIndicator">
+        <span>⚡ TACTICAL CYCLES // HERO TURN</span>
+      </div>
+      <div class="press-icons" id="pressTurnIcons">
+        <div class="press-icon full"></div>
+        <div class="press-icon full"></div>
+        <div class="press-icon full"></div>
+        <div class="press-icon full"></div>
       </div>
     </div>
-    <div class="f-preview" id="fusionPreviewBox">
-      <div id="fuseTierBadge" style="display:none"></div>
-      <h4 id="fuseResultName">— SELECT DEMONS —</h4>
-      <p id="fuseResultStats">Awaiting fusion synthesis calculation...</p>
-      <div id="fuseResultAff" class="aff"></div>
+
+    <!-- COMBAT TERMINAL LOG -->
+    <div class="log-terminal" id="combatLog">
+      <div class="log-line system">› Tactical Cycle Combat telemetry online. Target locked: DAEMON SENTINEL.</div>
+      <div class="log-line system">› Exploit weaknesses to gain extra Press Turn cycles. Afflict statuses for tactical advantage.</div>
     </div>
-    <div class="f-actions">
-      <button class="btn" onclick="closeFusionModal()">CANCEL</button>
-      <button class="btn purple big" id="execFuseBtn" onclick="executeFusion()">⚡ INITIATE FUSION</button>
+
+    <!-- HERO ENTITY -->
+    <div class="combat-card hero">
+      <div class="card-header">
+        <span class="entity-name" id="heroName">CAIRN-FRAME [SOVEREIGN VESSEL]</span>
+        <span class="pill" style="border-color:var(--cyan);color:var(--cyan);">PACT ROSTER [3/8]</span>
+      </div>
+      <div class="stat-row">
+        <div class="stat-label">
+          <span>INTEGRITY</span>
+          <span id="heroHpText">110 / 110</span>
+        </div>
+        <div class="meter-bar">
+          <div class="meter-fill hp" id="heroHpBar" style="width: 100%;"></div>
+        </div>
+      </div>
+      <div class="stat-row">
+        <div class="stat-label">
+          <span>FLUX</span>
+          <span id="heroFluxText">70 / 70</span>
+        </div>
+        <div class="meter-bar">
+          <div class="meter-fill sp" id="heroFluxBar" style="width: 100%;"></div>
+        </div>
+      </div>
+      <div class="affinities" id="heroAffinities">
+        <div class="affinity-tag">PHYS: <span>NORM</span></div>
+        <div class="affinity-tag">FIRE: <span>NORM</span></div>
+        <div class="affinity-tag">ICE: <span>NORM</span></div>
+        <div class="affinity-tag aff-weak">VOLT: <span>WEAK</span></div>
+        <div class="affinity-tag aff-resist">VOID: <span>RESIST</span></div>
+      </div>
+      <div class="status-badges" id="heroStatusBadges"></div>
+    </div>
+
+    <!-- ACTION DECK -->
+    <div class="action-deck">
+      <div class="action-title">TACTICAL INVOCATIONS & ACTIONS</div>
+      <div class="action-grid" id="actionGrid">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- VICTORY / DEFEAT MODAL -->
+  <div class="modal-overlay" id="endModal">
+    <div class="modal-box">
+      <h2 id="modalTitle">TACTICAL VICTORY</h2>
+      <p id="modalDesc">Hostile entity process purged. Salvaged 48 Soul Fragments and Archon telemetry cipher.</p>
+      <div class="modal-actions">
+        <a href="dungeon.html" class="nav-btn">🏰 RETURN TO DUNGEON</a>
+        <button class="nav-btn" onclick="resetEncounter()">↻ REMATCH</button>
+      </div>
     </div>
   </div>
-</div>
 
-<script>
-"use strict";
-/* ===== FPS telemetry counter ===== */
-let lastFrameTime=performance.now(),frameCount=0,fpsVal=60;
-function fpsLoop(){
-  frameCount++;
-  const now=performance.now();
-  if(now-lastFrameTime>=1000){
-    fpsVal=Math.round((frameCount*1000)/(now-lastFrameTime));
-    document.getElementById('fpsCounter').textContent='FPS: '+fpsVal;
-    frameCount=0;lastFrameTime=now;
-  }
-  requestAnimationFrame(fpsLoop);
-}
-requestAnimationFrame(fpsLoop);
+  <!-- FUSION MODAL PLACEHOLDER -->
+  <div class="modal-overlay" id="fusionModal">
+    <div class="modal-box">
+      <h2>⚡ DEMON FUSION CHAMBER</h2>
+      <p>Demon Fusion matrix ready. Combine compliant demon processes into a higher-tier tactical entity.</p>
+      <div class="modal-actions">
+        <a href="dungeon.html" class="nav-btn">🏰 GO TO DUNGEON LAB</a>
+        <button class="nav-btn" onclick="closeFusionModal()">CLOSE</button>
+      </div>
+    </div>
+  </div>
 
-/* ===== Soul Fragment HUD helper ===== */
-function updateSoulHud(){
-  const countEl = document.getElementById('soulCount');
-  if(!countEl) return;
-  let souls = 0;
-  if(window.SiliconRewards && typeof window.SiliconRewards.getSoulFragments === 'function'){
-    souls = window.SiliconRewards.getSoulFragments();
-  }
-  countEl.textContent = souls;
-}
+  <script>
+    /* ============================================================================
+     * SILICON PURGATORY :: ARENA COMBAT ENGINE
+     * SMT Press-Turn combat with procedural audio triggers & tactical status effects.
+     * ============================================================================ */
 
-/* ===== shared roster w/ affinities (ids match dungeon.html) ===== */
-const ELEMENTS=['kinetic','thermal','cryo','volt','void'];
-const ENEMY_DB={
- sentinel:{id:'sentinel',name:'DAEMON SENTINEL',col:'#ff2b44',col2:'#7a0f1c',glow:'#ff6b7e',horns:true,
-   hp:120,sp:40,atk:16,aff:{kinetic:'res',cryo:'weak',void:'nul'},skills:['kinetic','kinetic','void'],tier:1,lore:'Compiled warden.'},
- pyroclocker:{id:'pyroclocker',name:'PYRO CLOCKER',col:'#f59e0b',col2:'#7a3d00',glow:'#ffd27a',horns:false,
-   hp:90,sp:60,atk:14,aff:{thermal:'drain',cryo:'weak',volt:'res'},skills:['thermal','thermal','kinetic'],tier:1,lore:'Overclocked fire.'},
- cryodrifter:{id:'cryodrifter',name:'CRYO DRIFTER',col:'#38bdf8',col2:'#0c4a6e',glow:'#bae6fd',horns:true,
-   hp:110,sp:50,atk:15,aff:{cryo:'drain',thermal:'weak',kinetic:'res'},skills:['cryo','cryo','kinetic'],tier:1,lore:'Heat-sink drift.'},
- sparkharvester:{id:'sparkharvester',name:'SPARK HARVESTER',col:'#fde047',col2:'#854d0e',glow:'#fff7c2',horns:false,
-   hp:70,sp:80,atk:13,aff:{volt:'drain',void:'weak',cryo:'res'},skills:['volt','volt','volt'],tier:1,lore:'Voltage reaper.'},
- coreinquisitor:{id:'coreinquisitor',name:'CORE INQUISITOR',col:'#a855f7',col2:'#3b0764',glow:'#e9d5ff',horns:true,
-   hp:140,sp:70,atk:18,aff:{void:'nul',volt:'weak',kinetic:'res',thermal:'res',cryo:'res'},skills:['void','void','kinetic'],tier:2,lore:'Soul auditor.'},
-};
+    // --- GAME STATE ---
+    var HERO = {
+      name: 'CAIRN-FRAME',
+      maxHp: 110,
+      hp: 110,
+      maxFlux: 70,
+      flux: 70,
+      atk: 18,
+      aff: { phys: 'norm', fire: 'norm', ice: 'norm', volt: 'weak', void: 'resist' },
+      statusEffects: []
+    };
 
-/* ===== Player pact roster (default carries 2 recruited spirits) ===== */
-let PACT_ROSTER = [
-  JSON.parse(JSON.stringify(ENEMY_DB.pyroclocker)),
-  JSON.parse(JSON.stringify(ENEMY_DB.cryodrifter))
-];
+    var ENEMY = {
+      name: 'DAEMON SENTINEL',
+      maxHp: 95,
+      hp: 95,
+      maxFlux: 45,
+      flux: 45,
+      atk: 16,
+      aff: { phys: 'norm', fire: 'weak', ice: 'resist', volt: 'norm', void: 'null' },
+      statusEffects: []
+    };
 
-function updateRosterUI(){
-  const bar = document.getElementById('rosterChips');
-  if(!bar) return;
-  bar.innerHTML = '';
-  PACT_ROSTER.forEach((d, idx)=>{
-    bar.insertAdjacentHTML('beforeend', '<div class="roster-chip"><b>T'+(d.tier||1)+'</b> '+d.name+'</div>');
-  });
-  const tagEl = document.getElementById('rosterBar');
-  if(tagEl && tagEl.querySelector('.tag')){
-    tagEl.querySelector('.tag').textContent = 'PACT ROSTER ['+PACT_ROSTER.length+'/8]:';
-  }
-  updateSoulHud();
-}
+    var SKILLS = [
+      { id: 'kinetic', name: 'KINETIC STRIKE', el: 'phys', cost: 0, power: 24, status: null, desc: 'High-velocity blunt force. 15% Crit chance. Crits frozen/shocked foes.' },
+      { id: 'thermal', name: 'THERMAL BURST', el: 'fire', cost: 8, power: 30, status: 'OVERHEAT', statusChance: 0.35, desc: '35% chance to inflict OVERHEAT (8% max HP DoT, -25% Def).' },
+      { id: 'cryo', name: 'CRYO LANCE', el: 'ice', cost: 8, power: 28, status: 'FREEZE', statusChance: 0.30, desc: '30% chance to FREEZE (turn lock until shattered).' },
+      { id: 'volt', name: 'VOLT ARC', el: 'volt', cost: 9, power: 32, status: 'SHOCK', statusChance: 0.35, desc: '35% chance to inflict SHOCK (40% turn skip, incoming phys crits).' },
+      { id: 'void', name: 'VOID SPIKE', el: 'void', cost: 12, power: 38, status: 'CORROSION', statusChance: 0.30, desc: '30% chance to inflict CORROSION (doubled FLUX cost).' },
+      { id: 'talk', name: 'NEGOTIATE', el: 'talk', cost: 0, power: 0, status: null, desc: 'Attempt to coerce daemon into compliance.' },
+      { id: 'pass', name: 'PASS TURN', el: 'pass', cost: 0, power: 0, status: null, desc: 'Consumes 1/2 Press Turn icon and passes to ally.' }
+    ];
 
-const HERO={name:'CAIRN-FRAME',hp:110,sp:70,atk:17,aff:{void:'weak'}};
-const SKILLS=[
- {id:'cleave', el:'kinetic', name:'CLEAVE',   cost:0, pow:1.0, desc:'KINETIC'},
- {id:'thermal',el:'thermal', name:'THERMAL',  cost:10,pow:1.3, desc:'HEAT'},
- {id:'cryo',   el:'cryo',    name:'CRYO',     cost:10,pow:1.3, desc:'COLD'},
- {id:'volt',   el:'volt',    name:'VOLT',     cost:10,pow:1.3, desc:'ELEC'},
- {id:'void',   el:'void',    name:'VOID NULL',cost:14,pow:1.5, desc:'ENTROPY'},
- {id:'patch',  el:'heal',    name:'PATCH',    cost:12,pow:0,   desc:'REPAIR'},
- {id:'talk',   el:'talk',    name:'TALK',     cost:0, pow:0,   desc:'NEGOTIATE', isTalk:true},
- {id:'fuse',   el:'fuse',    name:'FUSE',     cost:0, pow:0,   desc:'CHAMBER', isFuse:true},
-];
+    var pressIcons = [1, 1, 1, 1]; // 1 = full, 0.5 = half
+    var activeTurn = 'hero'; // 'hero' or 'enemy'
+    var isBusy = false;
+    var audioInitialized = false;
 
-/* ===== sprite gen (matches dungeon aesthetic) ===== */
-function px(g,x,y,c){g.fillStyle=c;g.fillRect(x,y,1,1);}
-function drawCreature(cv,e){const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,16,16);
- const B=e.col||'#ec4899',D=e.col2||'#831843',G=e.glow||'#f472b6';g.fillStyle='rgba(0,0,0,.45)';g.fillRect(4,14,8,2);
- const body=["....DDDD....","...DBBBBD...","..DBBBBBBD..","..DBBBBBBD..",".DBBBBBBBBD.",".DBBBBBBBBD.",".DBBBBBBBBD.","..DBBBBBBD..","..DBBBBBBD..","...DB..BD..."];
- const m={B,D};for(let r=0;r<body.length;r++){const row=body[r];for(let x=0;x<row.length;x++){const ch=row[x];if(ch==='.')continue;px(g,x+2,r+4,m[ch]);}}
- if(e.horns){g.fillStyle=D;px(g,4,3,D);px(g,3,2,D);px(g,11,3,D);px(g,12,2,D);px(g,4,4,D);px(g,11,4,D);}
- g.fillStyle=G;g.fillRect(5,8,2,2);g.fillRect(9,8,2,2);g.fillStyle='#000';px(g,6,9,'#000');px(g,10,9,'#000');
- g.fillStyle=G;px(g,7,12,G);px(g,8,13,G);}
-function drawHero(cv){const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,16,16);
- g.fillStyle='rgba(0,0,0,.45)';g.fillRect(4,14,8,2);g.fillStyle='#10212c';g.fillRect(4,4,8,10);
- g.fillStyle='#18323f';g.fillRect(3,6,10,7);g.fillStyle='#0b1620';g.fillRect(5,2,6,4);
- g.fillStyle='#071019';g.fillRect(5,6,6,3);g.fillStyle='#38bdf8';g.fillRect(6,7,4,1);
- g.fillStyle='#bae6fd';px(g,6,7,'#bae6fd');g.fillStyle='#ff2b44';px(g,7,10,'#ff2b44');px(g,8,10,'#ff2b44');}
+    // --- AUDIO SYSTEM INTEGRATION ---
+    function playAudio(eventName) {
+      if (window.TacticalAudio) {
+        if (!audioInitialized) {
+          window.TacticalAudio.init();
+          audioInitialized = true;
+        }
+        window.TacticalAudio.play(eventName);
+      }
+    }
 
-/* ===== read params ===== */
-const params=new URLSearchParams(location.search);
-const seed=params.get('seed')||'arabella';
-const floorNum=parseInt(params.get('floor')||'1',10);
-let enemyId=params.get('enemy');
-if(!ENEMY_DB[enemyId]){
- if(enemyId==='pyrojack')enemyId='pyroclocker';
- else if(enemyId==='wendigo')enemyId='cryodrifter';
- else if(enemyId==='sprite')enemyId='sparkharvester';
- else if(enemyId==='warden')enemyId='coreinquisitor';
- else enemyId='sentinel';
-}
-const E=JSON.parse(JSON.stringify(ENEMY_DB[enemyId]));
-const H=JSON.parse(JSON.stringify(HERO));
-E.maxhp=E.hp;H.maxhp=H.hp;H.maxsp=H.sp;
-document.getElementById('encTag').textContent='ENCOUNTER · SEED '+seed.toUpperCase()+' (F'+floorNum+')';
-document.getElementById('dungeonLink').href='dungeon.html?seed='+encodeURIComponent(seed)+'&floor='+floorNum;
-const victoryBtn = document.getElementById('victoryDungeonBtn');
-if(victoryBtn) victoryBtn.href='dungeon.html?seed='+encodeURIComponent(seed)+'&floor='+floorNum;
+    function toggleAudio() {
+      if (window.TacticalAudio) {
+        var muted = window.TacticalAudio.toggleMute();
+        var btn = document.getElementById('btnAudioToggle');
+        if (muted) {
+          btn.textContent = '🔇 AUDIO: MUTED';
+          btn.classList.remove('active');
+        } else {
+          btn.textContent = '🔊 AUDIO: ACTIVE';
+          btn.classList.add('active');
+          playAudio('hit');
+        }
+      }
+    }
 
-/* ===== setup UI ===== */
-drawCreature(document.getElementById('enemySprite'),E);
-document.getElementById('enemySprite').style.setProperty('--glow',E.glow);
-document.getElementById('enemyName').textContent=E.name;
-drawHero(document.getElementById('heroSprite'));
-document.getElementById('heroName').textContent=H.name;
-updateRosterUI();
+    // --- LOGGING ---
+    function logMessage(text, cssClass) {
+      var terminal = document.getElementById('combatLog');
+      var line = document.createElement('div');
+      line.className = 'log-line ' + (cssClass || 'system');
+      line.textContent = '› ' + text;
+      terminal.insertBefore(line, terminal.firstChild);
+    }
 
-const affEl=document.getElementById('enemyAff');
-const revealed={};
-function renderAff(){affEl.innerHTML='';for(const el of ELEMENTS){const a=E.aff[el];if(!a||!revealed[el])continue;
- const cls=a==='weak'?'weak':a==='res'?'res':a==='nul'?'nul':'rpl';
- const lbl=a==='weak'?'WEAK':a==='res'?'RESIST':a==='nul'?'NULL':'DRAIN';
- affEl.insertAdjacentHTML('beforeend','<span class="'+cls+'">'+el.toUpperCase()+':'+lbl+'</span>');}}
-const skillsEl=document.getElementById('skills');
-SKILLS.forEach(s=>{const b=document.createElement('button');
- b.className='skill'+(s.isTalk?' talk-btn':'')+(s.isFuse?' fuse-btn':'');b.dataset.id=s.id;
- b.innerHTML=s.name+'<small>'+s.desc+(s.cost?' · '+s.cost+'FLUX':'')+'</small>';
- b.addEventListener('click',()=>heroAction(s));skillsEl.appendChild(b);});
+    // --- PRESS TURN ICON RENDERING ---
+    function renderPressIcons() {
+      var container = document.getElementById('pressTurnIcons');
+      container.innerHTML = '';
+      for (var i = 0; i < pressIcons.length; i++) {
+        var icon = document.createElement('div');
+        icon.className = 'press-icon ' + (pressIcons[i] === 1 ? 'full' : 'half');
+        container.appendChild(icon);
+      }
+      var phaseLabel = document.getElementById('turnPhaseIndicator');
+      if (activeTurn === 'hero') {
+        phaseLabel.innerHTML = '<span>⚡ TACTICAL CYCLES // HERO TURN</span>';
+        phaseLabel.style.color = 'var(--amber)';
+      } else {
+        phaseLabel.innerHTML = '<span>⚠️ TACTICAL CYCLES // HOSTILE COUNTER-ATTACK</span>';
+        phaseLabel.style.color = 'var(--crimson)';
+      }
+    }
 
-/* ===== tactical cycle engine ===== */
-let turn='hero',icons=[],busy=false;
-const logEl=document.getElementById('log');
-function log(msg,cls){logEl.insertAdjacentHTML('beforeend','<div class="'+(cls||'')+'">› '+msg+'</div>');logEl.scrollTop=logEl.scrollHeight;}
-function makeIcons(n){const a=[];for(let i=0;i<n;i++)a.push('full');return a;}
-function renderIcons(){const hi=document.getElementById('heroIcons'),ei=document.getElementById('enemyIcons');
- hi.innerHTML='';ei.innerHTML='';
- if(turn==='hero')icons.forEach(t=>hi.insertAdjacentHTML('beforeend','<div class="icon '+t+'"></div>'));
- else icons.forEach(t=>ei.insertAdjacentHTML('beforeend','<div class="icon enemy '+t+'"></div>'));}
-function spendTurn(result){
- if(result==='weak'||result==='crit'){const fi=icons.indexOf('full');if(fi>=0){icons[fi]='half';}else icons.shift();}
- else if(result==='normal'){if(icons[icons.length-1]==='half')icons.pop();else icons.pop();}
- else if(result==='miss'){icons.pop();if(icons.length)icons.pop();}
- else if(result==='nul'||result==='drain'||result==='rpl'){icons.length=0;}
- renderIcons();
-}
+    // --- UI UPDATER ---
+    function updateHUD() {
+      // Hero HP/FLUX
+      document.getElementById('heroHpText').textContent = Math.max(0, HERO.hp) + ' / ' + HERO.maxHp;
+      document.getElementById('heroHpBar').style.width = Math.max(0, (HERO.hp / HERO.maxHp * 100)) + '%';
+      document.getElementById('heroFluxText').textContent = Math.max(0, HERO.flux) + ' / ' + HERO.maxFlux;
+      document.getElementById('heroFluxBar').style.width = Math.max(0, (HERO.flux / HERO.maxFlux * 100)) + '%';
 
-function updateBars(){
-  document.getElementById('heroHpTxt').textContent=H.hp+'/'+H.maxhp;
-  document.getElementById('heroHp').style.width=Math.max(0,Math.round((H.hp/H.maxhp)*100))+'%';
-  document.getElementById('heroSpTxt').textContent=H.sp+'/'+H.maxsp;
-  document.getElementById('heroSp').style.width=Math.max(0,Math.round((H.sp/H.maxsp)*100))+'%';
-  document.getElementById('enemyHpTxt').textContent=E.hp+'/'+E.maxhp;
-  document.getElementById('enemyHp').style.width=Math.max(0,Math.round((E.hp/E.maxhp)*100))+'%';
-}
+      // Enemy HP/FLUX
+      document.getElementById('enemyHpText').textContent = Math.max(0, ENEMY.hp) + ' / ' + ENEMY.maxHp;
+      document.getElementById('enemyHpBar').style.width = Math.max(0, (ENEMY.hp / ENEMY.maxHp * 100)) + '%';
+      document.getElementById('enemyFluxText').textContent = Math.max(0, ENEMY.flux) + ' / ' + ENEMY.maxFlux;
+      document.getElementById('enemyFluxBar').style.width = Math.max(0, (ENEMY.flux / ENEMY.maxFlux * 100)) + '%';
 
-function heroAction(s){
-  if(busy||turn!=='hero')return;
-  if(s.isTalk){
-    if(window.NegotiateModule&&typeof window.NegotiateModule.start==='function'){
-      window.NegotiateModule.start(E, PACT_ROSTER, function(res){
-        if(res.recruited){ updateRosterUI(); checkEnd(); }
+      // Tactical Status Badges
+      if (window.TacticalStatus) {
+        document.getElementById('heroStatusBadges').innerHTML = window.TacticalStatus.renderBadges(HERO);
+        document.getElementById('enemyStatusBadges').innerHTML = window.TacticalStatus.renderBadges(ENEMY);
+      }
+
+      renderPressIcons();
+      renderActionDeck();
+    }
+
+    function renderActionDeck() {
+      var grid = document.getElementById('actionGrid');
+      grid.innerHTML = '';
+
+      var isCorroded = HERO.statusEffects && HERO.statusEffects.some(function(s) { return s.id === 'CORROSION'; });
+      var costMult = isCorroded ? 2 : 1;
+
+      SKILLS.forEach(function(sk) {
+        var btn = document.createElement('button');
+        btn.className = 'skill-btn';
+        var actualCost = sk.cost * costMult;
+        btn.disabled = isBusy || activeTurn !== 'hero' || HERO.flux < actualCost;
+
+        btn.innerHTML =
+          '<div class="skill-top">' +
+            '<span>' + sk.name + '</span>' +
+            '<span style="color:' + (actualCost > 0 ? 'var(--cyan)' : 'var(--dim)') + '">' + (actualCost > 0 ? actualCost + ' FLUX' : 'FREE') + '</span>' +
+          '</div>' +
+          '<div class="skill-sub">' + sk.desc + '</div>';
+
+        btn.onclick = function() {
+          executeHeroAction(sk, actualCost);
+        };
+        grid.appendChild(btn);
       });
     }
-    return;
-  }
-  if(s.isFuse){ openFusionModal(); return; }
-  if(s.el==='heal'){
-    if(H.sp<s.cost){ log('Insufficient FLUX!','c'); return; }
-    H.sp-=s.cost; H.hp=Math.min(H.maxhp, H.hp+40);
-    log('Repair cycles restored +40 Integrity.','g');
-    updateBars(); spendTurn('normal'); checkEnd(); return;
-  }
-  if(H.sp<s.cost){ log('Insufficient FLUX!','c'); return; }
-  H.sp-=s.cost;
-  const aff=E.aff[s.el]||'normal';
-  revealed[s.el]=true; renderAff();
-  let dmg=Math.round(H.atk*s.pow);
-  let resType='normal';
-  
-  // Anomaly modifier hooks
-  if(window.LeylineBattleHUD && window.LeylineBattleHUD.activeAnomaly){
-    const anom = window.LeylineBattleHUD.activeAnomaly;
-    if(anom.id === 'MOD_THERMAL_SURGE' && s.el === 'thermal'){
-      dmg = Math.round(dmg * 1.35);
-    }
-  }
 
-  // Spire Relic Outgoing damage hook
-  if(window.LeylineBattleHUD && typeof window.LeylineBattleHUD.modifyOutgoingDamage === 'function'){
-    dmg = window.LeylineBattleHUD.modifyOutgoingDamage(s.el, dmg, aff === 'weak');
-  }
+    // --- CONSUME PRESS TURN ICONS ---
+    function consumeIcon(isAdvantage) {
+      if (pressIcons.length === 0) return;
 
-  if(aff==='weak'){
-    dmg=Math.round(dmg*1.5);
-    resType='weak';
-    log('CRITICAL RESONANCE! Exploited '+s.el.toUpperCase()+' vulnerability for '+dmg+' dmg.','w');
-    if(window.LeylineBattleHUD && window.LeylineBattleHUD.hasRelic && window.LeylineBattleHUD.hasRelic('relic_apocalypse_matrix')){
-      log('▲ [APOCALYPSE MATRIX] Critical Resonance bonus unleashed (+20% burst)!','w');
+      if (isAdvantage) {
+        // Weakness or Crit hit
+        if (pressIcons[0] === 1) {
+          pressIcons[0] = 0.5; // Turn full into blinking half turn (bonus turn!)
+        } else {
+          pressIcons.shift(); // Consume half turn
+        }
+      } else {
+        // Standard action consumes 1 whole unit
+        pressIcons.shift();
+      }
+      renderPressIcons();
     }
-    // Relic hook: Broken Gate FLUX refund
-    if(window.LeylineBattleHUD && window.LeylineBattleHUD.activeRelics && window.LeylineBattleHUD.activeRelics.some(r=>r.id==='relic_broken_gate')){
-      const refund = Math.max(2, Math.round(s.cost * 0.15));
-      H.sp = Math.min(H.maxsp, H.sp + refund);
-      log('› [RELIC REFUND] Circuit resonance restores +'+refund+' FLUX.','w');
-    }
-  } else if(aff==='res'){
-    dmg=Math.round(dmg*0.5);
-    log('Hostile armor absorbed '+s.el.toUpperCase()+' (-50% dmg). Dealt '+dmg+'.','c');
-  } else if(aff==='nul'){
-    let bleedDmg = 0;
-    if(window.LeylineBattleHUD && typeof window.LeylineBattleHUD.checkNullBleedthrough === 'function'){
-      bleedDmg = window.LeylineBattleHUD.checkNullBleedthrough(aff, Math.round(H.atk*s.pow));
-    }
-    if(bleedDmg > 0){
-      dmg = bleedDmg;
-      resType = 'normal';
-      log('▲ [ENTROPIC CROWN] Bleed-through bypasses hostile barrier! Dealt '+dmg+' penetrating dmg!','w');
-    } else {
-      dmg=0; resType='nul';
-      log('Attack nullified by hostile barrier! Turn forfeited!','c');
-    }
-  } else if(aff==='drain'||aff==='rpl'){
-    E.hp=Math.min(E.maxhp, E.hp+dmg);
-    resType='drain';
-    log('Hostile absorbed '+s.el.toUpperCase()+' frequency! Recovered +'+dmg+' HP!','c');
-    dmg=0;
-  } else {
-    log('Dealt '+dmg+' kinetic/spectral dmg.','g');
-  }
-  if(dmg>0){ E.hp=Math.max(0, E.hp-dmg); }
-  updateBars();
-  spendTurn(resType);
-  checkEnd();
-}
 
-function enemyTurn(){
-  busy=true; turn='enemy';
-  icons=makeIcons(2); renderIcons();
-  log('— HOSTILE CYCLE —','c');
-  setTimeout(stepEnemy, 600);
-}
-
-function stepEnemy(){
-  if(icons.length===0||E.hp<=0||H.hp<=0){
-    busy=false; turn='hero';
-    icons=makeIcons(2); renderIcons();
-    log('— YOUR CYCLE —');
-    return;
-  }
-  const sk=E.skills[Math.floor(Math.random()*E.skills.length)];
-  let dmg=Math.round(E.atk*1.1);
-  const aff=H.aff[sk]||'normal';
-  let resType='normal';
-
-  // Spire Relic incoming damage mitigation hook
-  if(window.LeylineBattleHUD && typeof window.LeylineBattleHUD.modifyIncomingDamage === 'function'){
-    const origDmg = dmg;
-    dmg = window.LeylineBattleHUD.modifyIncomingDamage(dmg);
-    if(dmg < origDmg){
-      log('▲ [SINGULARITY FIELD] Abyssal field mitigates incoming strike (-15% dmg)!','w');
+    function forfeitIcons(count) {
+      for (var i = 0; i < count; i++) {
+        if (pressIcons.length > 0) pressIcons.shift();
+      }
+      playAudio('press_turn_lost');
+      renderPressIcons();
     }
-  }
 
-  if(aff==='weak'){
-    dmg=Math.round(dmg*1.5); resType='weak';
-    log(E.name+' exploited Cairn-Frame weakness with '+sk.toUpperCase()+'! Dealt '+dmg+' dmg!','c');
-  } else {
-    log(E.name+' attacks with '+sk.toUpperCase()+'! Dealt '+dmg+' dmg.','c');
-  }
-  H.hp=Math.max(0, H.hp-dmg);
-  updateBars();
-  spendTurn(resType);
-  if(H.hp<=0){ checkEnd(); return; }
-  setTimeout(stepEnemy, 600);
-}
+    // --- HERO ACTION ---
+    function executeHeroAction(skill, actualCost) {
+      if (isBusy || activeTurn !== 'hero') return;
+      isBusy = true;
 
-function checkEnd(){
-  if(E.hp<=0){
-    busy=true;
-    document.getElementById('resultTxt').textContent='VICTORY';
-    document.getElementById('result').className='result win show';
-    log('Hostile process terminated. Tactical victory confirmed.','g');
-    if(window.SiliconRewards&&typeof window.SiliconRewards.onBattleVictory==='function'){
-      window.SiliconRewards.onBattleVictory(E);
+      // Deduct Flux
+      HERO.flux = Math.max(0, HERO.flux - actualCost);
+      updateHUD();
+
+      if (skill.id === 'pass') {
+        logMessage('CAIRN-FRAME tactically transfers initiative.', 'hero');
+        if (pressIcons[0] === 1) {
+          pressIcons[0] = 0.5;
+        } else {
+          pressIcons.shift();
+        }
+        playAudio('hit');
+        finishTurnStep();
+        return;
+      }
+
+      if (skill.id === 'talk') {
+        logMessage('Initiating neural negotiation protocol with DAEMON SENTINEL...', 'system');
+        var talkSuccess = Math.random() < 0.5;
+        setTimeout(function() {
+          if (talkSuccess) {
+            logMessage('DAEMON SENTINEL process pacified! Compliant signature acquired.', 'weak');
+            playAudio('status_inflicted');
+            endBattle(true, 'DAEMON SENTINEL accepted truce protocol. 64 Soul fragments extracted.');
+          } else {
+            logMessage('Negotiation failed! Daemon Sentinel rejects overtures.', 'hostile');
+            playAudio('press_turn_lost');
+            consumeIcon(false);
+            finishTurnStep();
+          }
+        }, 600);
+        return;
+      }
+
+      // Attack Calculation
+      var affinity = ENEMY.aff[skill.el] || 'norm';
+      logMessage('CAIRN-FRAME unleashes [' + skill.name + '] (' + skill.el.toUpperCase() + ')!', 'hero');
+
+      // Check Status Mods (e.g. Cryo Shatter or Shock Crit)
+      var statusMod = window.TacticalStatus ? window.TacticalStatus.processIncomingHit(ENEMY, skill.el) : { forceCritical: false, bonusDamageMult: 1.0, notes: [] };
+      statusMod.notes.forEach(function(n) { logMessage(n, 'status'); });
+
+      if (affinity === 'null') {
+        logMessage('DAEMON SENTINEL absorbs ' + skill.el.toUpperCase() + '! Attacks deflected!', 'hostile');
+        playAudio('void');
+        forfeitIcons(2); // Void forfeits 2 icons
+        finishTurnStep();
+        return;
+      }
+
+      if (affinity === 'drain') {
+        var heal = Math.round(skill.power * 0.8);
+        ENEMY.hp = Math.min(ENEMY.maxHp, ENEMY.hp + heal);
+        logMessage('DAEMON SENTINEL drained ' + heal + ' HP from ' + skill.el.toUpperCase() + '!', 'hostile');
+        playAudio('drain');
+        forfeitIcons(pressIcons.length); // Drain forfeits ALL icons
+        finishTurnStep();
+        return;
+      }
+
+      var isWeakness = (affinity === 'weak');
+      var isCrit = statusMod.forceCritical || (skill.el === 'phys' && Math.random() < 0.15);
+      var multiplier = 1.0 * statusMod.bonusDamageMult;
+
+      if (isWeakness) multiplier *= 1.5;
+      if (isCrit) multiplier *= 1.5;
+      if (affinity === 'resist') multiplier *= 0.5;
+
+      var variance = (Math.random() * 0.2) + 0.9;
+      var rawDamage = Math.round(skill.power * multiplier * variance);
+
+      ENEMY.hp = Math.max(0, ENEMY.hp - rawDamage);
+
+      // Audio & Feedback
+      if (isCrit) {
+        logMessage('CRITICAL OVERCLOCK! Dealt ' + rawDamage + ' structural damage!', 'crit');
+        playAudio('critical');
+      } else if (isWeakness) {
+        logMessage('ELEMENTAL VULNERABILITY EXPLOITED! ' + rawDamage + ' damage!', 'weak');
+        playAudio('weakness');
+      } else {
+        logMessage('Hit dealt ' + rawDamage + ' damage.', 'hero');
+        playAudio('hit');
+      }
+
+      // Status Infliction Roll
+      if (skill.status && window.TacticalStatus && Math.random() < skill.statusChance) {
+        var inflicted = window.TacticalStatus.inflict(ENEMY, skill.status);
+        if (inflicted) {
+          logMessage('Inflicted [' + inflicted.name + '] on DAEMON SENTINEL!', 'status');
+        }
+      }
+
+      updateHUD();
+
+      // Check Victory
+      if (ENEMY.hp <= 0) {
+        setTimeout(function() {
+          endBattle(true, 'DAEMON SENTINEL process extinguished. 96 Soul Fragments acquired.');
+        }, 500);
+        return;
+      }
+
+      // Consume or grant half turn
+      var isAdvantage = isWeakness || isCrit;
+      consumeIcon(isAdvantage);
+
+      finishTurnStep();
     }
-  } else if(H.hp<=0){
-    busy=true;
-    document.getElementById('resultTxt').textContent='PURGED';
-    document.getElementById('result').className='result lose show';
-    log('Cairn-Frame integrity compromised. Process purged.','c');
-  } else if(icons.length===0){
-    if(turn==='hero') enemyTurn();
-    else {
-      turn='hero'; icons=makeIcons(2); renderIcons();
-      log('— YOUR CYCLE —');
-    }
-  }
-}
 
-/* ===== Fusion modal integration ===== */
-function openFusionModal(){
-  const m=document.getElementById('fusionModal');
-  if(m) m.classList.add('open');
-  if(window.FusionModule&&typeof window.FusionModule.populateSelectors==='function'){
-    window.FusionModule.populateSelectors(PACT_ROSTER);
-  }
-}
-function closeFusionModal(){
-  const m=document.getElementById('fusionModal');
-  if(m) m.classList.remove('open');
-}
-function updateFusionPreview(){
-  if(window.FusionModule&&typeof window.FusionModule.updatePreview==='function'){
-    window.FusionModule.updatePreview(PACT_ROSTER);
-  }
-}
-function executeFusion(){
-  if(window.FusionModule&&typeof window.FusionModule.execute===function(){
-    window.FusionModule.execute(PACT_ROSTER, function(res){
-      updateRosterUI();
-      closeFusionModal();
+    function finishTurnStep() {
+      updateHUD();
+      setTimeout(function() {
+        if (pressIcons.length === 0) {
+          // Switch to Enemy Turn
+          activeTurn = 'enemy';
+          pressIcons = [1, 1]; // Enemy gets 2 icons
+          renderPressIcons();
+          startEnemyTurn();
+        } else {
+          isBusy = false;
+        }
+      }, 500);
+    }
+
+    // --- ENEMY TURN ---
+    function startEnemyTurn() {
+      logMessage('Hostile process initializing turn cycle...', 'system');
+      updateHUD();
+
+      setTimeout(function() {
+        processEnemyTurnLoop();
+      }, 700);
+    }
+
+    function processEnemyTurnLoop() {
+      if (pressIcons.length === 0 || ENEMY.hp <= 0) {
+        // Return to Hero Turn
+        startHeroTurn();
+        return;
+      }
+
+      // Enemy status turn start check
+      if (window.TacticalStatus) {
+        var stRes = window.TacticalStatus.processTurnStart(ENEMY);
+        stRes.logs.forEach(function(l) { logMessage(l, 'status'); });
+        updateHUD();
+
+        if (ENEMY.hp <= 0) {
+          endBattle(true, 'Daemon Sentinel succumbed to core heat overload!');
+          return;
+        }
+
+        if (stRes.skipTurn) {
+          logMessage('DAEMON SENTINEL cannot act due to debilitating status!', 'weak');
+          playAudio('press_turn_lost');
+          pressIcons.shift();
+          renderPressIcons();
+          setTimeout(processEnemyTurnLoop, 700);
+          return;
+        }
+      }
+
+      // Pick enemy attack
+      var enemySkills = [
+        { name: 'ARC CUTTER', el: 'volt', power: 22, status: 'SHOCK', chance: 0.25 },
+        { name: 'THERMAL LASH', el: 'fire', power: 24, status: 'OVERHEAT', chance: 0.20 },
+        { name: 'KINETIC SLAM', el: 'phys', power: 26, status: null, chance: 0 }
+      ];
+      var sk = enemySkills[Math.floor(Math.random() * enemySkills.length)];
+
+      logMessage('DAEMON SENTINEL executes [' + sk.name + '] (' + sk.el.toUpperCase() + ')!', 'hostile');
+
+      var affinity = HERO.aff[sk.el] || 'norm';
+      var isWeak = (affinity === 'weak');
+      var isCrit = Math.random() < 0.12;
+      var mult = 1.0;
+      if (isWeak) mult *= 1.5;
+      if (isCrit) mult *= 1.5;
+      if (affinity === 'resist') mult *= 0.5;
+
+      var dmg = Math.round(sk.power * mult * ((Math.random() * 0.2) + 0.9));
+      HERO.hp = Math.max(0, HERO.hp - dmg);
+
+      if (isWeak) {
+        logMessage('CRITICAL WARNING! Hero vulnerability exploited for ' + dmg + ' damage!', 'hostile');
+        playAudio('weakness');
+      } else if (isCrit) {
+        logMessage('Hero takes a devastating ' + dmg + ' critical hit!', 'hostile');
+        playAudio('critical');
+      } else {
+        logMessage('Hero suffers ' + dmg + ' structural damage.', 'hostile');
+        playAudio('hit');
+      }
+
+      // Status Infliction on Hero
+      if (sk.status && window.TacticalStatus && Math.random() < sk.chance) {
+        var inf = window.TacticalStatus.inflict(HERO, sk.status);
+        if (inf) {
+          logMessage('ALERT: [' + inf.name + '] afflicted upon CAIRN-FRAME!', 'status');
+        }
+      }
+
+      updateHUD();
+
+      if (HERO.hp <= 0) {
+        setTimeout(function() {
+          endBattle(false, 'CAIRN-FRAME integrity collapsed. Hostile daemon seized neural core.');
+        }, 500);
+        return;
+      }
+
+      var isAdv = isWeak || isCrit;
+      consumeIcon(isAdv);
+
+      setTimeout(processEnemyTurnLoop, 800);
+    }
+
+    function startHeroTurn() {
+      activeTurn = 'hero';
+      pressIcons = [1, 1, 1, 1]; // Hero gets 4 icons
+      logMessage('Initiative returned to CAIRN-FRAME. 4 Press Turn cycles loaded.', 'system');
+
+      // Hero status turn start check
+      if (window.TacticalStatus) {
+        var hRes = window.TacticalStatus.processTurnStart(HERO);
+        hRes.logs.forEach(function(l) { logMessage(l, 'status'); });
+        updateHUD();
+
+        if (HERO.hp <= 0) {
+          endBattle(false, 'Core heat dissolution. Cairn-Frame integrity zeroed.');
+          return;
+        }
+
+        if (hRes.skipTurn) {
+          logMessage('CAIRN-FRAME systems unresponsive! Turn skipped.', 'hostile');
+          playAudio('press_turn_lost');
+          pressIcons.shift();
+        }
+      }
+
+      isBusy = false;
+      updateHUD();
+    }
+
+    // --- BATTLE CONCLUSION ---
+    function endBattle(victory, desc) {
+      isBusy = true;
+      var modal = document.getElementById('endModal');
+      var title = document.getElementById('modalTitle');
+      var descEl = document.getElementById('modalDesc');
+
+      if (victory) {
+        title.textContent = '⚡ TACTICAL PURGE COMPLETE';
+        title.style.color = 'var(--green)';
+        playAudio('hit');
+      } else {
+        title.textContent = '⚠️ SYSTEM COLLAPSE';
+        title.style.color = 'var(--crimson)';
+        playAudio('press_turn_lost');
+      }
+      descEl.textContent = desc;
+      modal.style.display = 'flex';
+    }
+
+    function resetEncounter() {
+      document.getElementById('endModal').style.display = 'none';
+      HERO.hp = HERO.maxHp;
+      HERO.flux = HERO.maxFlux;
+      HERO.statusEffects = [];
+      ENEMY.hp = ENEMY.maxHp;
+      ENEMY.flux = ENEMY.maxFlux;
+      ENEMY.statusEffects = [];
+      pressIcons = [1, 1, 1, 1];
+      activeTurn = 'hero';
+      isBusy = false;
+      logMessage('Encounter refreshed. Atmospheric pressure stabilized.', 'system');
+      updateHUD();
+    }
+
+    function openFusionModal() {
+      document.getElementById('fusionModal').style.display = 'flex';
+    }
+    function closeFusionModal() {
+      document.getElementById('fusionModal').style.display = 'none';
+    }
+
+    // --- 60 FPS TELEMETRY LOOP ---
+    var lastFrameTime = performance.now();
+    var frameCount = 0;
+    var fpsTimer = 0;
+
+    function telemetryLoop(now) {
+      var delta = now - lastFrameTime;
+      lastFrameTime = now;
+      frameCount++;
+      fpsTimer += delta;
+
+      if (fpsTimer >= 1000) {
+        var fps = Math.round((frameCount * 1000) / fpsTimer);
+        document.getElementById('fpsCounter').textContent = 'FPS: ' + fps;
+        frameCount = 0;
+        fpsTimer = 0;
+      }
+      requestAnimationFrame(telemetryLoop);
+    }
+
+    // --- INIT ---
+    window.addEventListener('DOMContentLoaded', function() {
+      updateHUD();
+      requestAnimationFrame(telemetryLoop);
     });
-  }
-}
-
-// Expose globals for Leyline HUD & Modules
-window.revealed = revealed;
-window.renderAff = renderAff;
-window.icons = icons;
-window.renderIcons = renderIcons;
-window.addLog = log;
-window.heroState = H;
-window.enemyState = E;
-
-// Initialize Arena State
-icons=makeIcons(2); renderIcons();
-updateBars();
-log('Hostile process '+E.name+' materialized from seed '+seed+'.');
-log('Probe resistance profiles — strike VULNERABILITIES for bonus tactical cycles.');
-log('Fusion chamber online. Combine recruited demons via FUSE action.');
-</script>
+    // Fallback if already loaded
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      updateHUD();
+    }
+  </script>
 </body>
 </html>
