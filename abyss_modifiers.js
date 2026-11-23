@@ -2,6 +2,7 @@
  * abyss_modifiers.js — Silicon Purgatory :: Abyssal Leyline Modifiers Module
  * Zero-dependency, self-contained ES6 module. Exposes window.AbyssModifiers.
  * Implements environmental leyline hazards, seed hashing, and combat hooks.
+ * Includes Dungeon Exploration Fusion Chamber HUD bridge.
  * ============================================================================ */
 (function (root) {
   'use strict';
@@ -109,4 +110,97 @@
   };
 
   root.AbyssModifiers = AbyssModifiers;
+
+  // ============================================================================
+  // Dungeon Exploration Fusion Chamber HUD Bridge
+  // Bridges DemonFusion, DemonNegotiator roster, and BestiaryCodex into dungeon.html
+  // ============================================================================
+  if (typeof document !== 'undefined') {
+    function initDungeonFusionBridge() {
+      // 1. Asynchronously load required modules if not already bound
+      function ensureScript(globalVar, filename, callback) {
+        if (root[globalVar]) {
+          if (callback) callback();
+          return;
+        }
+        var existing = document.querySelector('script[src*="' + filename + '"]');
+        if (existing) {
+          if (callback) {
+            existing.addEventListener('load', callback);
+          }
+          return;
+        }
+        var s = document.createElement('script');
+        s.src = filename;
+        s.async = false;
+        if (callback) {
+          s.addEventListener('load', callback);
+        }
+        document.head.appendChild(s);
+      }
+
+      ensureScript('TacticalAudio', 'tactical_audio_status.js');
+      ensureScript('DemonNegotiator', 'negotiate.js');
+      ensureScript('DemonFusion', 'fusion.js', function() {
+        ensureScript('FusionHUD', 'fusion_hud.js');
+      });
+
+      // 2. Inject FUSION CHAMBER button into .stats-bar navigation bar
+      function injectFusionButton() {
+        var statsBar = document.querySelector('.stats-bar');
+        if (!statsBar || document.getElementById('btn-fusion-chamber')) return;
+
+        var btn = document.createElement('button');
+        btn.id = 'btn-fusion-chamber';
+        btn.className = 'btn btn-crimson';
+        btn.innerHTML = '⚡ FUSION CHAMBER';
+        btn.title = 'Open the Demon Fusion Chamber to synthesize recruited entities';
+        btn.style.borderColor = '#ff2b44';
+        btn.style.boxShadow = '0 0 10px rgba(255, 43, 68, 0.3)';
+
+        btn.onclick = function() {
+          if (root.FusionHUD) {
+            var roster = (root.DemonNegotiator && root.DemonNegotiator.recruits) || [];
+            root.FusionHUD.open(roster, function(fusedDemon) {
+              if (root.BestiaryCodex && fusedDemon && (fusedDemon.id || fusedDemon.name)) {
+                var fId = (fusedDemon.id || fusedDemon.name).toLowerCase();
+                root.BestiaryCodex.recordEncounter(fId, true);
+              }
+            });
+          } else {
+            ensureScript('FusionHUD', 'fusion_hud.js', function() {
+              if (root.FusionHUD) {
+                var roster = (root.DemonNegotiator && root.DemonNegotiator.recruits) || [];
+                root.FusionHUD.open(roster, function(fusedDemon) {
+                  if (root.BestiaryCodex && fusedDemon && (fusedDemon.id || fusedDemon.name)) {
+                    var fId = (fusedDemon.id || fusedDemon.name).toLowerCase();
+                    root.BestiaryCodex.recordEncounter(fId, true);
+                  }
+                });
+              }
+            });
+          }
+        };
+
+        var bestiaryBtn = document.getElementById('btn-bestiary-toggle');
+        if (bestiaryBtn && bestiaryBtn.parentNode === statsBar) {
+          statsBar.insertBefore(btn, bestiaryBtn);
+        } else {
+          statsBar.appendChild(btn);
+        }
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', injectFusionButton);
+      } else {
+        injectFusionButton();
+      }
+    }
+
+    try {
+      initDungeonFusionBridge();
+    } catch (e) {
+      console.warn('Fusion HUD bridge auto-injection notice:', e);
+    }
+  }
 })(typeof window !== 'undefined' ? window : globalThis);
