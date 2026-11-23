@@ -36,6 +36,8 @@
   .btn-cyan:hover{background:var(--cyan);color:#000;box-shadow:0 0 12px rgba(73,226,255,.5);}
   .btn-purple{background:var(--purple-dim);border-color:var(--purple);color:#fff;}
   .btn-purple:hover{background:var(--purple);color:#000;box-shadow:0 0 12px rgba(192,132,252,.5);}
+  .btn-amber{background:var(--gold-dim);border-color:var(--gold);color:#fff;}
+  .btn-amber:hover{background:var(--gold);color:#000;box-shadow:0 0 12px rgba(255,193,77,.5);}
   #viewport-wrap{flex:1;position:relative;display:flex;overflow:hidden;background:#000;}
   #game-canvas{width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;display:block;}
   #radar-panel{position:absolute;top:12px;right:12px;background:rgba(12,15,23,0.92);border:1px solid var(--panel-border);padding:8px;display:flex;flex-direction:column;gap:6px;width:160px;backdrop-filter:blur(4px);z-index:5;}
@@ -54,7 +56,7 @@
   #dialog-card{background:var(--panel);border:2px solid var(--crimson);padding:20px;max-width:440px;width:90%;box-shadow:0 0 30px rgba(255,43,78,0.4);display:flex;flex-direction:column;gap:12px;}
   .d-title{color:var(--crimson);font-size:12px;font-weight:800;letter-spacing:0.15em;}
   .d-body{font-size:11px;color:var(--ink);line-height:1.5;}
-  .d-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:4px;}
+  .d-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:4px;flex-wrap:wrap;}
   #dpad{position:absolute;bottom:16px;right:16px;display:grid;grid-template-columns:40px 40px 40px;grid-template-rows:40px 40px 40px;gap:4px;z-index:6;}
   .d-btn{background:rgba(18,24,36,0.85);border:1px solid var(--panel-border);color:var(--cyan);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;user-select:none;}
   .d-btn:active{background:var(--cyan);color:#000;}
@@ -123,13 +125,18 @@
         <div class="d-body" id="d-body">DAEMON HOSTILE ENGAGED.</div>
         <div class="d-actions" id="d-actions">
           <button class="btn" id="d-flee">DISENGAGE</button>
-          <button class="btn btn-crimson" id="d-battle">ENGAGE COMBAT</button>
+          <button class="btn btn-purple" id="d-inspect">INSPECT CODEX</button>
+          <button class="btn btn-crimson" id="d-battle">ENGAGE COMBAT ⚔️</button>
         </div>
       </div>
     </div>
   </div>
 </div>
 
+<script src="tactical_audio_status.js"></script>
+<script src="negotiate.js"></script>
+<script src="fusion.js"></script>
+<script src="fusion_hud.js"></script>
 <script src="boss.js"></script>
 <script src="abyss_modifiers.js"></script>
 <script src="archon.js"></script>
@@ -254,6 +261,7 @@
         type: { 
           id: isSpire ? 'void_archon' : 'sentinel',
           name: isSpire ? ('ABYSSAL SPECTER // D+' + (currentFloor - 10)) : 'VOID STALKER', 
+          archetype: isSpire ? 'CRYO_DRIFTER' : (h % 3 === 0 ? 'PYROCLOCKER' : (h % 2 === 0 ? 'SPARK_HARVESTER' : 'SENTINEL')),
           col: isSpire ? '#a35aff' : '#ff2b4e', 
           col2: isSpire ? '#3d1666' : '#7a1226', 
           glow: isSpire ? '#d19eff' : '#ff6b7e',
@@ -494,12 +502,13 @@
       'Contact: <strong style="color:#fff;">' + entityName + '</strong><br/>' +
       'Class: <span style="color:var(--cyan);">' + (h.type && h.type.classTitle ? h.type.classTitle : 'UNREGISTERED ENTITY') + '</span><br/>' +
       'Combat Status: <span style="color:var(--crimson);font-weight:700;">ALERT // WEAPONS HOT</span><br/>' +
-      '<p style="color:#5a6478;font-size:9.5px;margin-top:6px;">Disengage to relocate, or engage in Tactical Cycle Press Turn arena.</p>' +
+      '<p style="color:#5a6478;font-size:9.5px;margin-top:6px;">Parley with entity to negotiate recruitment/tribute, disengage, or engage in Tactical Cycle Press Turn arena.</p>' +
       '</div>';
 
     dActions.innerHTML =
       '<button class="btn" id="d-flee">DISENGAGE</button>' +
       '<button class="btn btn-purple" id="d-inspect">INSPECT CODEX</button>' +
+      (h.isArchon ? '' : '<button class="btn btn-amber" id="d-parley">⚡ PARLEY / NEGOTIATE</button>') +
       '<button class="btn btn-crimson" id="d-battle">ENGAGE COMBAT ⚔️</button>';
 
     dialog.style.display = 'flex';
@@ -515,6 +524,91 @@
         window.BestiaryCodex.renderBestiaryModal();
       }
     };
+
+    var parleyBtn = document.getElementById('d-parley');
+    if (parleyBtn) {
+      parleyBtn.onclick = function() {
+        if (!window.DemonNegotiator) {
+          alert('Demon Negotiation module initializing...');
+          return;
+        }
+
+        var enemyDemon = {
+          name: entityName,
+          archetype: (h.type && h.type.archetype) ? h.type.archetype : (
+            entityName.indexOf('PYRO') !== -1 ? 'PYROCLOCKER' :
+            entityName.indexOf('CRYO') !== -1 ? 'CRYO_DRIFTER' :
+            entityName.indexOf('SPARK') !== -1 ? 'SPARK_HARVESTER' : 'SENTINEL'
+          ),
+          level: currentFloor,
+          hp: h.type ? h.type.hp : 100,
+          maxHp: h.type ? h.type.maxHp : 100
+        };
+
+        dialog.style.display = 'none';
+
+        window.DemonNegotiator.startNegotiation(enemyDemon, function(result) {
+          if (result.outcome === 'recruit') {
+            var roster = [];
+            try {
+              roster = JSON.parse(localStorage.getItem('silicon_purgatory_roster') || '[]');
+            } catch(e) { roster = []; }
+
+            if (roster.length < 8) {
+              var newEntity = {
+                id: 'daemon_' + Date.now() + '_' + Math.floor(Math.random()*1000),
+                name: enemyDemon.name,
+                archetype: enemyDemon.archetype,
+                level: enemyDemon.level,
+                hp: enemyDemon.maxHp,
+                maxHp: enemyDemon.maxHp,
+                flux: 60,
+                maxFlux: 60,
+                recruitedAt: new Date().toISOString(),
+                affinities: {
+                  phys: 'normal',
+                  fire: enemyDemon.archetype === 'PYROCLOCKER' ? 'resist' : 'normal',
+                  ice: enemyDemon.archetype === 'CRYO_DRIFTER' ? 'resist' : 'normal',
+                  volt: enemyDemon.archetype === 'SPARK_HARVESTER' ? 'resist' : 'normal',
+                  void: 'normal'
+                }
+              };
+              roster.push(newEntity);
+              localStorage.setItem('silicon_purgatory_roster', JSON.stringify(roster));
+            }
+
+            unextractedFragments += 25;
+
+            var idx = hostiles.indexOf(h);
+            if (idx !== -1) hostiles.splice(idx, 1);
+            updateTelemetry();
+
+            var leylineTag = document.getElementById('leyline-tag');
+            var leylineDesc = document.getElementById('leyline-desc');
+            if (leylineTag && leylineDesc) {
+              leylineTag.textContent = '★ COVENANT SEALED';
+              leylineTag.style.color = 'var(--gold)';
+              leylineDesc.textContent = enemyDemon.name + ' joined active roster [' + Math.min(8, roster.length) + '/8]. (+25 Fragments)';
+            }
+          } else if (result.outcome === 'flee') {
+            unextractedFragments += 15;
+            var idx = hostiles.indexOf(h);
+            if (idx !== -1) hostiles.splice(idx, 1);
+            updateTelemetry();
+
+            var leylineTag = document.getElementById('leyline-tag');
+            var leylineDesc = document.getElementById('leyline-desc');
+            if (leylineTag && leylineDesc) {
+              leylineTag.textContent = '🕊️ PARLEY CONCLUDED';
+              leylineTag.style.color = 'var(--cyan)';
+              leylineDesc.textContent = enemyDemon.name + ' dispersed into leylines peacefully. (+15 Fragments)';
+            }
+          } else if (result.outcome === 'anger') {
+            window.location.href = 'index.html?encounter=' + encodeURIComponent(entityName) + '&ambush=1';
+          }
+        });
+      };
+    }
 
     document.getElementById('d-battle').onclick = function() {
       window.location.href = 'index.html';
